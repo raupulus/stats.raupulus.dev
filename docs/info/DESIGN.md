@@ -111,11 +111,15 @@ Todos los clientes web (`public/css/styles.css`) deben declarar y utilizar exact
 - Columna izquierda con etiqueta en negrita (`--color-on-surface`) y columna derecha con valores técnicos encapsulados en píldoras monoespaciadas (`background: rgba(5, 15, 28, 0.75); border: 1px solid rgba(76, 214, 255, 0.24); color: var(--color-tertiary)`).
 
 ### 4.3. Reglas de Exposición en la Web Pública (`public/`)
-- **Identidad Visual (`favicon.svg` y `logo.svg`):** Emblema isométrico de nodo hexagonal con barras de espectro y anillos concéntricos en los tonos oficiales `#050f1c`, `#091421`, `#3272b8`, `#a3c9ff` y `#4cd6ff`.
+- **Identidad Visual (`favicon.svg`, `logo.svg` y assets de repositorio):**
+  - Emblema isométrico de nodo hexagonal con barras de espectro y anillos concéntricos en los tonos oficiales `#050f1c`, `#091421`, `#3272b8`, `#a3c9ff` y `#4cd6ff`.
+  - `docs/images/gitlab-avatar-192x192.png` (avatar 192x192 px con transparencia para GitLab).
+  - `docs/images/github-social-preview-1280x640.png` (social preview card 1280x640 px para GitHub).
+  - `docs/images/banner.webp` (banner ligero optimizado WebP para `README.md`).
 - **Redes Sociales:** Muestra seguidores totales, $\Delta_{24h}$, publicaciones totales, visualizaciones (cuando la plataforma las soporta) y desglose por canal/cuenta.
 - **Criptomonedas (`BTC`, `ADA`):** Muestra cotización spot en vivo tanto en **USD (`$`)** como en **EUR (`€`)**, variación porcentual 24h y rango máximo/mínimo 24h.
 - **Keycounter (Privacidad de Actividad Reciente):** En la web pública se muestran **única y exclusivamente los totales históricos acumulados** (`pulsations_total` y `clicks_total`). Nunca se renderizan ni reciben contadores de «hoy» ni de «última hora».
 - **Seguridad DOM:** Prohibido el uso de `innerHTML`, `outerHTML` o `document.write`. Toda actualización del DOM se realiza con `document.createElement` y `textContent`.
 
 ---
-> Creado: 2026-10-28 · Última revisión: 2026-10-28
+> Creado: 2026-10-28 · Última revisión: 2026-10-29

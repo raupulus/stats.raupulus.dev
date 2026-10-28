@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/banner.webp" alt="stats.raupulus.dev - Social Stats API & WebSockets" width="100%">
+</p>
+
 # Social Stats API & WebSockets
 
 Herramienta centralizada, empaquetada en un contenedor **Docker** y desarrollada en **Python**, diseñada para monitorizar estadísticas de redes sociales (YouTube, Bluesky, Mastodon, Twitter/X, Instagram, TikTok, etc.) y métricas de sistema, sirviendo la información a paneles, dashboards y pantallas de escritorio en tiempo real.

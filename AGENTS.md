@@ -92,6 +92,13 @@ social-stats-api-websockets/
 │   ├── future/
 │   │   ├── crypto_and_system_metrics.md
 │   │   └── keystrokes.md
+│   ├── images/
+│   │   ├── banner.webp
+│   │   ├── github-social-preview-1280x640.png
+│   │   ├── github-social-preview.svg
+│   │   ├── gitlab-avatar-192x192.png
+│   │   ├── gitlab-avatar-192x192.webp
+│   │   └── gitlab-avatar.svg
 │   └── info/
 │       ├── COMPONENTS.md
 │       ├── DESIGN.md

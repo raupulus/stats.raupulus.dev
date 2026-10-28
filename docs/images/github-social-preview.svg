@@ -1,0 +1,209 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    
+    <linearGradient id="logoBg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#050f1c"/>
+      <stop offset="38%" stop-color="#091421"/>
+      <stop offset="54%" stop-color="#1d426c"/>
+      <stop offset="72%" stop-color="#121c2a"/>
+      <stop offset="100%" stop-color="#050f1c"/>
+    </linearGradient>
+    <linearGradient id="logoOuterBorder" x1="8" y1="8" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4cd6ff"/>
+      <stop offset="50%" stop-color="#3272b8"/>
+      <stop offset="100%" stop-color="#a3c9ff"/>
+    </linearGradient>
+    <linearGradient id="logoBeamCyan" x1="64" y1="16" x2="64" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4cd6ff"/>
+      <stop offset="65%" stop-color="#3272b8" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#007a96" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="logoBeamIce" x1="64" y1="22" x2="64" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f8f9ff"/>
+      <stop offset="35%" stop-color="#a3c9ff"/>
+      <stop offset="100%" stop-color="#3272b8" stop-opacity="0.15"/>
+    </linearGradient>
+    <radialGradient id="coreGlow" cx="50%" cy="55%" r="45%">
+      <stop offset="0%" stop-color="#4cd6ff" stop-opacity="0.42"/>
+      <stop offset="60%" stop-color="#3272b8" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#050f1c" stop-opacity="0"/>
+    </radialGradient>
+  
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1280" y2="640" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#040a14"/>
+      <stop offset="45%" stop-color="#071220"/>
+      <stop offset="85%" stop-color="#0a192b"/>
+      <stop offset="100%" stop-color="#050f1c"/>
+    </linearGradient>
+    <radialGradient id="ambientGlow1" cx="240" cy="320" r="450" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4cd6ff" stop-opacity="0.16"/>
+      <stop offset="50%" stop-color="#3272b8" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#040a14" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ambientGlow2" cx="1050" cy="180" r="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3272b8" stop-opacity="0.14"/>
+      <stop offset="60%" stop-color="#007a96" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#040a14" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#3272b8" stroke-width="0.7" stroke-opacity="0.12"/>
+      <circle cx="40" cy="40" r="1" fill="#4cd6ff" fill-opacity="0.25"/>
+    </pattern>
+    <linearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0e1d30" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#081422" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="0" y1="0" x2="600" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#e2edff"/>
+      <stop offset="100%" stop-color="#4cd6ff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="640" fill="url(#bgGrad)"/>
+  <rect width="1280" height="640" fill="url(#grid)"/>
+  <circle cx="260" cy="320" r="450" fill="url(#ambientGlow1)"/>
+  <circle cx="1050" cy="180" r="400" fill="url(#ambientGlow2)"/>
+
+  <!-- Technical border frame -->
+  <rect x="24" y="24" width="1232" height="592" rx="16" fill="none" stroke="#3272b8" stroke-width="1.2" stroke-opacity="0.35"/>
+  <rect x="30" y="30" width="1220" height="580" rx="12" fill="none" stroke="#4cd6ff" stroke-width="0.8" stroke-opacity="0.2" stroke-dasharray="6 6"/>
+
+  <!-- HUD Corner brackets -->
+  <path d="M 24 56 L 24 24 L 56 24" fill="none" stroke="#4cd6ff" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M 1256 56 L 1256 24 L 1224 24" fill="none" stroke="#4cd6ff" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M 24 584 L 24 616 L 56 616" fill="none" stroke="#3272b8" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M 1256 584 L 1256 616 L 1224 616" fill="none" stroke="#3272b8" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Left: Logo Display Container -->
+  <g transform="translate(100, 160) scale(2.5)">
+    <!-- Extra shadow/glow behind logo -->
+    <filter id="logoDropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#4cd6ff" flood-opacity="0.25"/>
+    </filter>
+    <g filter="url(#logoDropShadow)">
+      <!-- Chasis octogonal/redondeado estilo panel de telemetría -->
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#logoBg)"/>
+  <rect x="4" y="4" width="120" height="120" rx="26" stroke="url(#logoOuterBorder)" stroke-width="2.2" stroke-opacity="0.85"/>
+  <rect x="10" y="10" width="108" height="108" rx="21" stroke="#a3c9ff" stroke-width="1" stroke-opacity="0.18"/>
+
+  <!-- Resplandor radial central -->
+  <circle cx="64" cy="70" r="48" fill="url(#coreGlow)"/>
+
+  <!-- Esquinas técnicas de precisión -->
+  <path d="M16 30V20C16 17.7909 17.7909 16 20 16H30" stroke="#4cd6ff" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M112 30V20C112 17.7909 110.209 16 108 16H98" stroke="#4cd6ff" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M16 98V108C16 110.209 17.7909 112 20 112H30" stroke="#3272b8" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M112 98V108C112 110.209 110.209 112 108 112H98" stroke="#3272b8" stroke-width="2.4" stroke-linecap="round"/>
+
+  <!-- Pistas de circuito inferiores (flujo WebSocket unidireccional) -->
+  <path d="M22 98H40L48 90H80L88 98H106" stroke="#3272b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.65"/>
+  <path d="M30 105H52L58 99H70L76 105H98" stroke="#4cd6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.75"/>
+  <circle cx="30" cy="105" r="2.5" fill="#4cd6ff"/>
+  <circle cx="98" cy="105" r="2.5" fill="#4cd6ff"/>
+
+  <!-- Plataforma circular isométrica de telemetría -->
+  <ellipse cx="64" cy="78" rx="42" ry="16" fill="#050f1c" fill-opacity="0.9" stroke="#3272b8" stroke-width="2"/>
+  <ellipse cx="64" cy="75" rx="35" ry="12.5" fill="#091421" stroke="#4cd6ff" stroke-width="1.5" stroke-opacity="0.8"/>
+  <ellipse cx="64" cy="75" rx="27" ry="9" stroke="#a3c9ff" stroke-width="1" stroke-dasharray="4 3" stroke-opacity="0.55"/>
+
+  <!-- Columnas verticales de espectro de datos (inspirado en el panel de telemetría) -->
+  <rect x="31" y="48" width="4.5" height="27" rx="2.25" fill="url(#logoBeamCyan)"/>
+  <rect x="39" y="36" width="4.5" height="39" rx="2.25" fill="url(#logoBeamIce)"/>
+  <rect x="47" y="28" width="5" height="47" rx="2.5" fill="url(#logoBeamCyan)"/>
+  <rect x="55.5" y="19" width="5" height="56" rx="2.5" fill="url(#logoBeamIce)"/>
+  <rect x="67.5" y="17" width="5" height="58" rx="2.5" fill="url(#logoBeamCyan)"/>
+  <rect x="76" y="26" width="5" height="49" rx="2.5" fill="url(#logoBeamIce)"/>
+  <rect x="84.5" y="38" width="4.5" height="37" rx="2.25" fill="url(#logoBeamCyan)"/>
+  <rect x="92.5" y="46" width="4.5" height="29" rx="2.25" fill="url(#logoBeamIce)"/>
+
+  <!-- Cubo / Nodo Hexagonal Isométrico Central con Red de Nodos -->
+  <polygon points="64,36 86,48.5 86,73.5 64,86 42,73.5 42,48.5" fill="#091421" fill-opacity="0.9" stroke="#4cd6ff" stroke-width="2.4" stroke-linejoin="round"/>
+  <polygon points="64,42 80,51.2 80,69.8 64,79 48,69.8 48,51.2" fill="#121c2a" fill-opacity="0.75" stroke="#a3c9ff" stroke-width="1.2" stroke-opacity="0.6"/>
+
+  <!-- Aristas internas de la malla de telemetría -->
+  <path d="M42 48.5L64 61L86 48.5M64 61V86" stroke="#a3c9ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M42 73.5L64 61L86 73.5" stroke="#3272b8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.75"/>
+  <path d="M64 36V61" stroke="#4cd6ff" stroke-width="1.5" stroke-dasharray="2.5 2.5" stroke-opacity="0.8"/>
+
+  <!-- Vértices luminosos del nodo -->
+  <circle cx="64" cy="36" r="3" fill="#a3c9ff"/>
+  <circle cx="86" cy="48.5" r="3" fill="#4cd6ff"/>
+  <circle cx="42" cy="48.5" r="3" fill="#4cd6ff"/>
+  <circle cx="86" cy="73.5" r="2.8" fill="#3272b8"/>
+  <circle cx="42" cy="73.5" r="2.8" fill="#3272b8"/>
+  <circle cx="64" cy="86" r="3" fill="#a3c9ff"/>
+
+  <!-- Núcleo activo central -->
+  <circle cx="64" cy="61" r="6.5" fill="#007a96" stroke="#4cd6ff" stroke-width="2"/>
+  <circle cx="64" cy="61" r="3" fill="#f8f9ff"/>
+    </g>
+  </g>
+
+  <!-- Right: Content Information -->
+  <g transform="translate(480, 0)">
+    <!-- Top System Category Badge -->
+    <g transform="translate(0, 140)">
+      <rect x="0" y="0" width="370" height="32" rx="16" fill="#091829" stroke="#4cd6ff" stroke-width="1.2" stroke-opacity="0.6"/>
+      <circle cx="16" cy="16" r="4.5" fill="#4cd6ff"/>
+      <circle cx="16" cy="16" r="8" fill="#4cd6ff" fill-opacity="0.25"/>
+      <text x="32" y="21" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#a3c9ff" letter-spacing="1.5">REALTIME TELEMETRY &amp; STATS</text>
+    </g>
+
+    <!-- Main Title -->
+    <text x="0" y="240" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="52" font-weight="800" fill="url(#titleGrad)" letter-spacing="-0.5">stats.raupulus.dev</text>
+
+    <!-- Subtitle / Role -->
+    <text x="0" y="285" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="22" font-weight="500" fill="#9bc2f2" letter-spacing="0.2">Social Stats &amp; Local Metrics Stream Engine</text>
+
+    <!-- Description -->
+    <text x="0" y="335" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="400" fill="#7d9dbf">
+      Centralized, strict read-only backend serving YouTube, Twitter/X, Instagram,
+    </text>
+    <text x="0" y="362" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="400" fill="#7d9dbf">
+      Bluesky, Mastodon, TikTok, LinkedIn, Crypto &amp; local telemetry metrics.
+    </text>
+
+    <!-- Tech Badges -->
+    <g transform="translate(0, 410)">
+      <!-- Badge 1 -->
+      <g transform="translate(0, 0)">
+        <rect width="110" height="34" rx="8" fill="url(#cardGrad)" stroke="#3272b8" stroke-width="1.2"/>
+        <text x="55" y="22" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#e2edff">FastAPI v1</text>
+      </g>
+      <!-- Badge 2 -->
+      <g transform="translate(122, 0)">
+        <rect width="125" height="34" rx="8" fill="url(#cardGrad)" stroke="#3272b8" stroke-width="1.2"/>
+        <text x="62.5" y="22" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#4cd6ff">WebSockets</text>
+      </g>
+      <!-- Badge 3 -->
+      <g transform="translate(259, 0)">
+        <rect width="90" height="34" rx="8" fill="url(#cardGrad)" stroke="#3272b8" stroke-width="1.2"/>
+        <text x="45" y="22" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#e2edff">Docker</text>
+      </g>
+      <!-- Badge 4 -->
+      <g transform="translate(361, 0)">
+        <rect width="125" height="34" rx="8" fill="url(#cardGrad)" stroke="#3272b8" stroke-width="1.2"/>
+        <text x="62.5" y="22" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#e2edff">SQLite WAL</text>
+      </g>
+      <!-- Badge 5 -->
+      <g transform="translate(498, 0)">
+        <rect width="115" height="34" rx="8" fill="url(#cardGrad)" stroke="#3272b8" stroke-width="1.2"/>
+        <text x="57.5" y="22" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#4cd6ff">Read-Only</text>
+      </g>
+      <!-- Badge 6 -->
+      <g transform="translate(625, 0)">
+        <rect width="90" height="34" rx="8" fill="url(#cardGrad)" stroke="#3272b8" stroke-width="1.2"/>
+        <text x="45" y="22" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#a3c9ff">Δ1h / Δ24h</text>
+      </g>
+    </g>
+
+    <!-- Bottom Footer Meta -->
+    <g transform="translate(0, 480)">
+      <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="500" fill="#4cd6ff">⚡ Zero Manual Relogin</text>
+      <text x="175" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="500" fill="#a3c9ff">·   Multi-Profile Registry</text>
+      <text x="350" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="500" fill="#7d9dbf">·   Local &amp; WireGuard / Tailscale VPN</text>
+    </g>
+  </g>
+</svg>
