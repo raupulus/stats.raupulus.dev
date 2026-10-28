@@ -7,6 +7,7 @@ from social_stats.collectors.base import (
     CollectorError,
 )
 from social_stats.collectors.bluesky import BlueskyCollector
+from social_stats.collectors.crypto import CryptoCollector
 from social_stats.collectors.instagram import InstagramCollector
 from social_stats.collectors.linkedin import LinkedInCollector
 from social_stats.collectors.mastodon import MastodonCollector
@@ -18,6 +19,7 @@ __all__ = [
     "BaseCollector",
     "BlueskyCollector",
     "CollectorError",
+    "CryptoCollector",
     "DEFAULT_HTTP_TIMEOUT",
     "DEFAULT_USER_AGENT",
     "InstagramCollector",

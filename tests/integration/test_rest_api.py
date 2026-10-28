@@ -70,6 +70,30 @@ async def seeded_api_app(
         now=now,
     )
 
+    m_btc = await snapshot_repo.enrich_and_record(
+        Platform.CRYPTO,
+        "btc",
+        AccountMetrics(
+            price_usd=81285.45,
+            price_eur=72791.52,
+            price_change_24h_usd=497.86,
+            price_change_24h_pct=0.616,
+            price_change_24h_eur=335.61,
+            price_change_24h_eur_pct=0.463,
+            high_24h_usd=81823.0,
+            low_24h_usd=80397.14,
+            high_24h_eur=73471.72,
+            low_24h_eur=72050.0,
+        ),
+        timestamp=now_ts,
+    )
+    await state_store.update_account_success(
+        Platform.CRYPTO,
+        "btc",
+        m_btc,
+        now=now,
+    )
+
     app = create_app(
         settings=Settings(),
         registry=sample_registry,
@@ -189,3 +213,28 @@ async def test_write_methods_return_405(
     assert resp.status_code == 405
     assert resp.json()["error"] == "method_not_allowed"
     assert "GET" in resp.headers.get("Allow", "")
+
+
+async def test_crypto_prices_endpoint(seeded_api_app: httpx.AsyncClient) -> None:
+    """Verify GET /api/v1/crypto returns BTC and ADA prices in USD and EUR, and supports ?symbol=."""
+    resp = await seeded_api_app.get("/api/v1/crypto")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "BTC" in data["assets"]
+    assert "ADA" in data["assets"]
+    btc = data["assets"]["BTC"]
+    assert btc["symbol"] == "BTC"
+    assert btc["price_usd"] == 81285.45
+    assert btc["price_eur"] == 72791.52
+    assert btc["price_change_24h_pct"] == 0.616
+    assert btc["price_change_24h_eur_pct"] == 0.463
+
+    # Filter by ?symbol=bitcoin (alias for BTC)
+    btc_only = await seeded_api_app.get("/api/v1/crypto", params={"symbol": "bitcoin"})
+    assert btc_only.status_code == 200
+    assert list(btc_only.json()["assets"].keys()) == ["BTC"]
+
+    # Unknown symbol -> 404
+    not_found = await seeded_api_app.get("/api/v1/crypto", params={"symbol": "DOGE"})
+    assert not_found.status_code == 404
+    assert not_found.json()["error"] == "crypto_symbol_not_found"

@@ -17,6 +17,7 @@ from social_stats import __version__
 from social_stats.api.router import api_v1_router, ws_router
 from social_stats.collectors.base import BaseCollector
 from social_stats.collectors.bluesky import BlueskyCollector
+from social_stats.collectors.crypto import CryptoCollector
 from social_stats.collectors.instagram import InstagramCollector
 from social_stats.collectors.linkedin import LinkedInCollector
 from social_stats.collectors.mastodon import MastodonCollector
@@ -79,6 +80,9 @@ def build_default_collectors(
             access_token=settings.linkedin_access_token,
             li_at_cookie=settings.linkedin_li_at_cookie,
             db=db,
+            snapshot_repo=snapshot_repo,
+        ),
+        Platform.CRYPTO: CryptoCollector(
             snapshot_repo=snapshot_repo,
         ),
     }

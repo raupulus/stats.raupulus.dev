@@ -10,6 +10,7 @@ Capa de exposición Read-Only: servidor FastAPI, endpoints REST v1, endpoints We
 - Expone los endpoints REST Read-Only bajo `/api/v1`:
   - `GET /api/v1/health`: estado de salud global, SQLite y resumen por colector.
   - `GET /api/v1/profiles`: catálogo de perfiles configurados.
+  - `GET /api/v1/crypto`: cotizaciones spot y estadísticas 24h en USD y EUR de criptomonedas configuradas (`BTC`, `ADA`, etc., con filtro opcional `?symbol=`).
   - `GET /api/v1/stats`: estadísticas globales o filtradas por `?profile=` y `?platform=`.
   - `GET /api/v1/profiles/{profile_id}/stats`: estadísticas agregadas y desglosadas de un perfil (`?platform=`).
   - `GET /api/v1/profiles/{profile_id}/history`: serie temporal de snapshots históricos desde SQLite (`?window=1h|24h|7d|30d`).

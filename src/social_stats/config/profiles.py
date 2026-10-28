@@ -11,6 +11,14 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 PROFILE_ID_REGEX = re.compile(r"^[a-z0-9_-]+$")
 YOUTUBE_CHANNEL_ID_REGEX = re.compile(r"^UC[a-zA-Z0-9_-]{22}$")
+CRYPTO_SYMBOL_REGEX = re.compile(r"^[a-z0-9]{2,15}$")
+CRYPTO_ALIASES: dict[str, str] = {
+    "bitcoin": "btc",
+    "cardano": "ada",
+    "ethereum": "eth",
+    "solana": "sol",
+    "ripple": "xrp",
+}
 SUPPORTED_PLATFORMS: frozenset[str] = frozenset(
     {
         "youtube",
@@ -20,6 +28,7 @@ SUPPORTED_PLATFORMS: frozenset[str] = frozenset(
         "mastodon",
         "tiktok",
         "linkedin",
+        "crypto",
     }
 )
 
@@ -70,6 +79,19 @@ class AccountConfig(BaseModel):
             if not normalized_handle:
                 raise ValueError("Mastodon account requires 'handle'")
             return f"{normalized_handle}@{clean_instance}"
+
+        if norm_platform == "crypto":
+            raw_symbol = (clean_handle or clean_id).lstrip("$@").lower()
+            if not raw_symbol:
+                raise ValueError(
+                    "Crypto account requires 'handle' or 'id' (e.g. 'BTC', 'ADA')"
+                )
+            normalized_symbol = CRYPTO_ALIASES.get(raw_symbol, raw_symbol)
+            if not CRYPTO_SYMBOL_REGEX.match(normalized_symbol):
+                raise ValueError(
+                    f"Invalid crypto symbol '{raw_symbol}'. Expected 2-15 alphanumeric chars"
+                )
+            return normalized_symbol
 
         normalized_handle = clean_handle.lstrip("@").lower()
         if not normalized_handle:

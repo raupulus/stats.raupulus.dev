@@ -89,6 +89,18 @@ def sample_registry() -> ProfilesRegistry:
                                 "enabled": False,
                             }
                         ],
+                        "crypto": [
+                            {
+                                "handle": "BTC",
+                                "label": "Bitcoin (BTC)",
+                                "enabled": True,
+                            },
+                            {
+                                "handle": "ADA",
+                                "label": "Cardano (ADA)",
+                                "enabled": True,
+                            },
+                        ],
                     },
                 },
                 "proyecto_secundario": {

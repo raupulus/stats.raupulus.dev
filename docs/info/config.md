@@ -10,7 +10,7 @@ Sistema de configuración tipado del servidor: carga y validación de variables 
 - Carga y valida las variables de entorno del servidor mediante `Settings(BaseSettings)` (`pydantic-settings`).
 - Resuelve dinámicamente intervalos de recolección por plataforma (`get_poll_interval`) y credenciales multicuentas de Instagram (`get_instagram_credentials(credentials_ref)`).
 - Parsea y valida el archivo declarativo `config/profiles.yaml` mediante `ProfilesRegistry`, `ProfileConfig` y `AccountConfig`.
-- Normaliza y calcula de forma determinista el identificador único de cuenta (`account_key`) para cada red social (`youtube`, `twitter`, `instagram`, `bluesky`, `mastodon`, `tiktok`, `linkedin`).
+- Normaliza y calcula de forma determinista el identificador único de cuenta (`account_key`) para cada red social y plataforma de mercado (`youtube`, `twitter`, `instagram`, `bluesky`, `mastodon`, `tiktok`, `linkedin`, `crypto`), incluyendo alias como `bitcoin` $\rightarrow$ `btc` y `cardano` $\rightarrow$ `ada`.
 - Deduplica cuentas repetidas entre perfiles mediante `get_unique_accounts_by_platform()` para evitar peticiones HTTP redundantes en los colectores.
 
 ### 1.2. Qué NO hace

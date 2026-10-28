@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any
 
 from social_stats.models.api import HistoryPoint
 from social_stats.models.enums import Platform
@@ -178,14 +180,20 @@ class SnapshotRepository:
         """Insert a point-in-time metric snapshot into metric_snapshots."""
         ts = timestamp if timestamp is not None else int(datetime.now(UTC).timestamp())
         latest = metrics.latest_post
+        extra_data: dict[str, Any] = {}
+        if metrics.price_usd is not None:
+            extra_data["price_usd"] = metrics.price_usd
+        if metrics.price_eur is not None:
+            extra_data["price_eur"] = metrics.price_eur
+        extra_json = json.dumps(extra_data) if extra_data else None
         await self.db.execute_write(
             """
             INSERT INTO metric_snapshots (
                 timestamp, platform, account_key,
                 followers_total, posts_total, views_total,
                 latest_post_id, latest_post_views, latest_post_likes,
-                latest_post_comments, latest_post_shares
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                latest_post_comments, latest_post_shares, extra_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """,
             (
                 ts,
@@ -199,6 +207,7 @@ class SnapshotRepository:
                 latest.likes if latest else None,
                 latest.comments if latest else None,
                 latest.shares if latest else None,
+                extra_json,
             ),
         )
 
@@ -242,7 +251,8 @@ class SnapshotRepository:
         min_ts = ts - window_seconds
         async with self.db.conn.execute(
             """
-            SELECT timestamp, followers_total, posts_total, views_total, latest_post_views
+            SELECT timestamp, followers_total, posts_total, views_total,
+                   latest_post_views, extra_json
             FROM metric_snapshots
             WHERE platform = ?
               AND account_key = ?
@@ -254,16 +264,33 @@ class SnapshotRepository:
         ) as cursor:
             rows = await cursor.fetchall()
 
-        return [
-            HistoryPoint(
-                timestamp=datetime.fromtimestamp(row["timestamp"], tz=UTC),
-                followers_total=row["followers_total"],
-                posts_total=row["posts_total"],
-                views_total=row["views_total"],
-                latest_post_views=row["latest_post_views"],
+        points: list[HistoryPoint] = []
+        for row in rows:
+            price_usd: float | None = None
+            price_eur: float | None = None
+            raw_extra = row["extra_json"]
+            if raw_extra:
+                try:
+                    extra_dict = json.loads(raw_extra)
+                    if isinstance(extra_dict, dict):
+                        if extra_dict.get("price_usd") is not None:
+                            price_usd = float(extra_dict["price_usd"])
+                        if extra_dict.get("price_eur") is not None:
+                            price_eur = float(extra_dict["price_eur"])
+                except (ValueError, TypeError):
+                    pass
+            points.append(
+                HistoryPoint(
+                    timestamp=datetime.fromtimestamp(row["timestamp"], tz=UTC),
+                    followers_total=row["followers_total"],
+                    posts_total=row["posts_total"],
+                    views_total=row["views_total"],
+                    latest_post_views=row["latest_post_views"],
+                    price_usd=price_usd,
+                    price_eur=price_eur,
+                )
             )
-            for row in rows
-        ]
+        return points
 
     async def prune_old_snapshots(
         self,

@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from social_stats.config.profiles import ProfilesRegistry
 from social_stats.models.api import (
     AccountHistorySeries,
+    CryptoPricesResponse,
     GlobalStatsResponse,
     ProfileHistoryResponse,
     ProfilesCatalogResponse,
@@ -65,6 +66,29 @@ async def list_profiles(request: Request) -> ProfilesCatalogResponse:
     """Return catalog of all configured profiles and their active platforms."""
     aggregator = cast(ProfileAggregator, request.app.state.aggregator)
     return aggregator.get_profiles_catalog()
+
+
+@router.get("/crypto", response_model=CryptoPricesResponse)
+async def get_crypto_prices(
+    request: Request,
+    symbol: str | None = Query(
+        default=None, description="Optional crypto ticker filter (e.g. BTC, ADA)"
+    ),
+) -> CryptoPricesResponse | JSONResponse:
+    """Return spot prices and 24h market stats in USD and EUR for configured crypto assets."""
+    aggregator = cast(ProfileAggregator, request.app.state.aggregator)
+    response = aggregator.get_crypto_prices(symbol_filter=symbol)
+    if symbol is not None and not response.assets:
+        all_crypto = aggregator.get_crypto_prices()
+        return JSONResponse(
+            status_code=404,
+            content={
+                "error": "crypto_symbol_not_found",
+                "message": f"El activo cripto '{symbol}' no está configurado",
+                "available_symbols": list(all_crypto.assets.keys()),
+            },
+        )
+    return response
 
 
 @router.get("/stats", response_model=GlobalStatsResponse)

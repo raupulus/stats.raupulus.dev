@@ -1,6 +1,6 @@
 # Módulo: `collectors` (`src/social_stats/collectors/`)
 
-Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección asíncrona de métricas para las 7 redes sociales soportadas.
+Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección asíncrona de métricas para las 7 redes sociales soportadas y criptomonedas (`CryptoCollector`).
 
 ---
 
@@ -13,6 +13,7 @@ Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección as�
   - `YouTubeCollector` (`youtube.py`): consulta batch multicanal (hasta 50 canales por llamada) y resolución cacheada de `@handle` a `UC...`.
   - `BlueskyCollector` (`bluesky.py`): consulta batch de perfiles (`getProfiles`) y último post original (`getAuthorFeed` descartando reposts).
   - `MastodonCollector` (`mastodon.py`): consulta pública multi-instancia (`accounts/lookup` + `statuses`) con aislamiento de errores por instancia.
+  - `CryptoCollector` (`crypto.py`): consulta batch de cotizaciones spot y estadísticas 24h en dólares (`USDT`) y euros (`EUR`) mediante Binance Public Market API (`/api/v3/ticker/24hr`) sin tokens.
 - Implementa los colectores de Nivel 2 (arquitectura dual con fallback):
   - `TwitterCollector` (`twitter.py`): Nivel A Syndication API (`followbutton/info.json` + `timeline-profile`) y Nivel B GraphQL con cookies Read-Only opcionales.
   - `InstagramCollector` (`instagram.py`): Nivel A Meta Graph API con System User Token permanente y Nivel B fallback `web_profile_info` con `curl_cffi`.
@@ -40,7 +41,7 @@ Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección as�
 
 ## 4. Puntos de entrada (Auth, permisos y límites)
 - `BaseCollector.collect_batch(accounts: list[AccountConfig]) -> dict[str, AccountMetrics]`
-- `YouTubeCollector`, `BlueskyCollector`, `MastodonCollector`, `TwitterCollector`, `InstagramCollector`, `TikTokCollector`, `LinkedInCollector`.
+- `YouTubeCollector`, `BlueskyCollector`, `MastodonCollector`, `TwitterCollector`, `InstagramCollector`, `TikTokCollector`, `LinkedInCollector`, `CryptoCollector`.
 
 ---
 
@@ -78,6 +79,7 @@ Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección as�
 - [`tests/unit/collectors/test_instagram.py`](../../tests/unit/collectors/test_instagram.py)
 - [`tests/unit/collectors/test_tiktok.py`](../../tests/unit/collectors/test_tiktok.py)
 - [`tests/unit/collectors/test_linkedin.py`](../../tests/unit/collectors/test_linkedin.py)
+- [`tests/unit/collectors/test_crypto.py`](../../tests/unit/collectors/test_crypto.py)
 - Comando: `.venv/bin/pytest tests/unit/collectors/`
 
 ---

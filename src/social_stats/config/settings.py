@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     poll_interval_instagram: int = Field(default=900, ge=10)
     poll_interval_tiktok: int = Field(default=900, ge=10)
     poll_interval_linkedin: int = Field(default=3600, ge=10)
+    poll_interval_crypto: int = Field(default=60, ge=10)
 
     # SQLite snapshot retention
     snapshot_retention_days: int = Field(default=30, ge=1)

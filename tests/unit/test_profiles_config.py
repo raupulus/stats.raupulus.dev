@@ -32,9 +32,11 @@ def test_load_example_profiles_config() -> None:
     assert raupulus.accounts["mastodon"][0].account_key == "raupulus@mastodon.social"
     assert raupulus.accounts["bluesky"][0].account_key == "raupulus.dev"
     assert raupulus.accounts["linkedin"][0].enabled is False
+    assert [c.account_key for c in raupulus.accounts["crypto"]] == ["btc", "ada"]
 
     unique = registry.get_unique_accounts_by_platform(only_enabled=True)
     assert len(unique["youtube"]) == 3
+    assert [c.account_key for c in unique["crypto"]] == ["btc", "ada"]
     assert "linkedin" not in unique  # Because the only linkedin account is enabled=False
 
     unique_all = registry.get_unique_accounts_by_platform(only_enabled=False)

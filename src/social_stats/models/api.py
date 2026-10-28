@@ -43,6 +43,35 @@ class HistoryPoint(BaseModel):
     posts_total: int | None = None
     views_total: int | None = None
     latest_post_views: int | None = None
+    price_usd: float | None = None
+    price_eur: float | None = None
+
+
+class CryptoAssetPrice(BaseModel):
+    """Current spot price and 24h statistics for a cryptocurrency asset in USD and EUR."""
+
+    symbol: str
+    account_key: str
+    label: str | None = None
+    status: CollectorStatus
+    last_updated_at: datetime | None = None
+    price_usd: float | None = None
+    price_eur: float | None = None
+    price_change_24h_usd: float | None = None
+    price_change_24h_pct: float | None = None
+    price_change_24h_eur: float | None = None
+    price_change_24h_eur_pct: float | None = None
+    high_24h_usd: float | None = None
+    low_24h_usd: float | None = None
+    high_24h_eur: float | None = None
+    low_24h_eur: float | None = None
+
+
+class CryptoPricesResponse(BaseModel):
+    """Response schema for GET /api/v1/crypto."""
+
+    generated_at: datetime
+    assets: dict[str, CryptoAssetPrice] = Field(default_factory=dict)
 
 
 class AccountHistorySeries(BaseModel):
@@ -94,9 +123,9 @@ class WSScope(BaseModel):
 class MetricChange(BaseModel):
     """Represents a numeric diff for a metric field."""
 
-    previous: int | None
-    current: int
-    delta: int
+    previous: int | float | None
+    current: int | float
+    delta: int | float
 
 
 class MetricUpdateData(BaseModel):

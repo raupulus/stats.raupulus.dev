@@ -21,6 +21,13 @@ TOP_LEVEL_METRIC_FIELDS: tuple[str, ...] = (
     "views_last_1h",
 )
 
+CRYPTO_METRIC_FIELDS: tuple[str, ...] = (
+    "price_usd",
+    "price_eur",
+    "price_change_24h_pct",
+    "price_change_24h_eur_pct",
+)
+
 DELTA_METRIC_FIELDS: frozenset[str] = frozenset(
     {"followers_last_24h", "views_last_24h", "views_last_1h"}
 )
@@ -93,6 +100,26 @@ class DiffEngine:
                     previous=prev_val,
                     current=curr_val,
                     delta=curr_val - prev_val,
+                )
+
+        for cfield in CRYPTO_METRIC_FIELDS:
+            curr_fval: float | None = getattr(current, cfield)
+            if curr_fval is None:
+                continue
+            prev_fval: float | None = (
+                getattr(previous, cfield) if previous is not None else None
+            )
+            if prev_fval is None:
+                changes[cfield] = MetricChange(
+                    previous=None,
+                    current=curr_fval,
+                    delta=curr_fval,
+                )
+            elif curr_fval != prev_fval:
+                changes[cfield] = MetricChange(
+                    previous=prev_fval,
+                    current=curr_fval,
+                    delta=round(curr_fval - prev_fval, 8),
                 )
 
         is_new_latest_post = False

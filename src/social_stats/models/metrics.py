@@ -22,7 +22,7 @@ class LatestPostMetrics(BaseModel):
 
 
 class AccountMetrics(BaseModel):
-    """Normalized metrics for a single social media account or channel."""
+    """Normalized metrics for a single social media account, channel, or crypto asset."""
 
     followers_total: int | None = None
     followers_last_24h: int | None = None
@@ -33,6 +33,16 @@ class AccountMetrics(BaseModel):
     window_1h_complete: bool = False
     window_24h_complete: bool = False
     latest_post: LatestPostMetrics | None = None
+    price_usd: float | None = None
+    price_eur: float | None = None
+    price_change_24h_usd: float | None = None
+    price_change_24h_pct: float | None = None
+    price_change_24h_eur: float | None = None
+    price_change_24h_eur_pct: float | None = None
+    high_24h_usd: float | None = None
+    low_24h_usd: float | None = None
+    high_24h_eur: float | None = None
+    low_24h_eur: float | None = None
 
 
 class AccountState(BaseModel):

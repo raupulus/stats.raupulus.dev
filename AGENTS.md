@@ -105,6 +105,7 @@ social-stats-api-websockets/
 │       ├── services.md
 │       ├── storage.md
 │       └── apis/
+│           ├── binance.md
 │           ├── bluesky.md
 │           ├── instagram.md
 │           ├── linkedin.md
@@ -128,6 +129,7 @@ social-stats-api-websockets/
 │       │   ├── __init__.py
 │       │   ├── base.py
 │       │   ├── bluesky.py
+│       │   ├── crypto.py
 │       │   ├── instagram.py
 │       │   ├── linkedin.py
 │       │   ├── mastodon.py
@@ -164,6 +166,7 @@ social-stats-api-websockets/
         ├── test_snapshot_deltas.py
         └── collectors/
             ├── test_bluesky.py
+            ├── test_crypto.py
             ├── test_instagram.py
             ├── test_linkedin.py
             ├── test_mastodon.py
@@ -178,7 +181,7 @@ social-stats-api-websockets/
 
 - **Tipado estricto:** Uso de `typing` y modelos `Pydantic` para todos los payloads de datos devueltos por la API y WebSockets.
 - **Gestión de errores:** Si un colector de una red social falla o experimenta rate limit, el sistema debe responder con el último dato conocido en caché (stale data) indicando el estado del collector, sin tumbar el servicio ni las demás métricas.
-- **Modularidad:** Cada fuente de métricas (YouTube, Twitter, Instagram, Bluesky, Mastodon, TikTok, LinkedIn) es un módulo/proveedor desacoplado con una interfaz común (`BaseCollector`).
+- **Modularidad:** Cada fuente de métricas (YouTube, Twitter, Instagram, Bluesky, Mastodon, TikTok, LinkedIn, Crypto) es un módulo/proveedor desacoplado con una interfaz común (`BaseCollector`).
 
 ---
 

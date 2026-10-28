@@ -4,7 +4,9 @@ Documento de notas para futuras integraciones a mostrar en la pantalla de escrit
 
 ---
 
-## 1. Precios de Criptomonedas (BTC y ADA)
+## 1. Precios de Criptomonedas (BTC y ADA) — [IMPLEMENTADO]
+
+> **Nota de promoción:** Esta integración ya ha sido implementada en código ([`src/social_stats/collectors/crypto.py`](../../src/social_stats/collectors/crypto.py)) y documentada en la documentación viva ([`docs/info/apis/binance.md`](../info/apis/binance.md) y [`docs/info/collectors.md`](../info/collectors.md)).
 
 ### 1.1. Requisitos
 - Obtener precio en tiempo real de:

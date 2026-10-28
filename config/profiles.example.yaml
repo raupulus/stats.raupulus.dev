@@ -48,6 +48,14 @@ profiles:
           label: "LinkedIn Personal"
           enabled: false
 
+      crypto:
+        - handle: "BTC"
+          label: "Bitcoin (BTC)"
+          enabled: true
+        - handle: "ADA"
+          label: "Cardano (ADA)"
+          enabled: true
+
   proyecto_secundario:
     name: "Proyecto Secundario"
     description: "Métricas de redes del proyecto secundario"

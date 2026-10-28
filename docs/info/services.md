@@ -32,6 +32,7 @@ Servicios de coordinación del núcleo: agregación multiperfil (`ProfileAggrega
 - `ProfileAggregator.get_profile_stats(profile_id, platform_filter=None)`
 - `ProfileAggregator.get_global_stats(profile_filter=None, platform_filter=None)`
 - `ProfileAggregator.get_profiles_catalog()`
+- `ProfileAggregator.get_crypto_prices(symbol_filter=None)`
 - `ProfileAggregator.get_collectors_health()`
 - `CollectorScheduler.start()`, `stop()`, `run_collector_once()`
 - `WSManager.connect()`, `disconnect()`, `send_snapshot()`, `broadcast_update()`, `broadcast_collector_status()`, `broadcast_heartbeat()`, `start_heartbeat()`, `stop_heartbeat()`

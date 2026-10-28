@@ -4,9 +4,16 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from social_stats.config.profiles import AccountConfig, ProfileConfig, ProfilesRegistry
+from social_stats.config.profiles import (
+    CRYPTO_ALIASES,
+    AccountConfig,
+    ProfileConfig,
+    ProfilesRegistry,
+)
 from social_stats.models.api import (
     CollectorHealthSummary,
+    CryptoAssetPrice,
+    CryptoPricesResponse,
     GlobalStatsResponse,
     ProfileCatalogItem,
     ProfilesCatalogResponse,
@@ -265,3 +272,47 @@ class ProfileAggregator:
             )
 
         return summaries
+
+    def get_crypto_prices(
+        self,
+        *,
+        symbol_filter: str | None = None,
+        now: datetime | None = None,
+    ) -> CryptoPricesResponse:
+        """Build CryptoPricesResponse across all configured crypto accounts."""
+        ts = now if now is not None else datetime.now(UTC)
+        unique_crypto = self.registry.get_unique_accounts_by_platform(
+            only_enabled=True
+        ).get(Platform.CRYPTO.value, [])
+
+        norm_filter: str | None = None
+        if symbol_filter is not None:
+            raw_sym = symbol_filter.strip().lstrip("$@").lower()
+            norm_filter = CRYPTO_ALIASES.get(raw_sym, raw_sym)
+
+        assets: dict[str, CryptoAssetPrice] = {}
+        for acc_cfg in unique_crypto:
+            if norm_filter is not None and acc_cfg.account_key != norm_filter:
+                continue
+            state = self._resolve_account_state(Platform.CRYPTO, acc_cfg)
+            m = state.metrics
+            sym_upper = acc_cfg.account_key.upper()
+            assets[sym_upper] = CryptoAssetPrice(
+                symbol=sym_upper,
+                account_key=acc_cfg.account_key,
+                label=state.label,
+                status=state.status,
+                last_updated_at=state.last_updated_at,
+                price_usd=m.price_usd,
+                price_eur=m.price_eur,
+                price_change_24h_usd=m.price_change_24h_usd,
+                price_change_24h_pct=m.price_change_24h_pct,
+                price_change_24h_eur=m.price_change_24h_eur,
+                price_change_24h_eur_pct=m.price_change_24h_eur_pct,
+                high_24h_usd=m.high_24h_usd,
+                low_24h_usd=m.low_24h_usd,
+                high_24h_eur=m.high_24h_eur,
+                low_24h_eur=m.low_24h_eur,
+            )
+
+        return CryptoPricesResponse(generated_at=ts, assets=assets)
