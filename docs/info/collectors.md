@@ -1,6 +1,6 @@
 # Módulo: `collectors` (`src/social_stats/collectors/`)
 
-Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección asíncrona de métricas por red social.
+Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección asíncrona de métricas para las 7 redes sociales soportadas.
 
 ---
 
@@ -9,10 +9,16 @@ Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección as�
 ### 1.1. Qué hace
 - Define el contrato abstracto `BaseCollector` (`collect_batch(accounts) -> dict[str, AccountMetrics]`).
 - Provee utilidades para registrar errores por cuenta (`record_account_error`) y cuentas deshabilitadas (`record_account_disabled`) sin abortar la recolección del resto de cuentas del lote.
-- Implementa los colectores de Nivel 1:
+- Implementa los colectores de Nivel 1 (100% abiertos/API Key perpetua):
   - `YouTubeCollector` (`youtube.py`): consulta batch multicanal (hasta 50 canales por llamada) y resolución cacheada de `@handle` a `UC...`.
   - `BlueskyCollector` (`bluesky.py`): consulta batch de perfiles (`getProfiles`) y último post original (`getAuthorFeed` descartando reposts).
   - `MastodonCollector` (`mastodon.py`): consulta pública multi-instancia (`accounts/lookup` + `statuses`) con aislamiento de errores por instancia.
+- Implementa los colectores de Nivel 2 (arquitectura dual con fallback):
+  - `TwitterCollector` (`twitter.py`): Nivel A Syndication API (`followbutton/info.json` + `timeline-profile`) y Nivel B GraphQL con cookies Read-Only opcionales.
+  - `InstagramCollector` (`instagram.py`): Nivel A Meta Graph API con System User Token permanente y Nivel B fallback `web_profile_info` con `curl_cffi`.
+  - `TikTokCollector` (`tiktok.py`): extracción SSR desde `<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__">` con `curl_cffi` y soporte opcional para TikTok Display API v2 con rotación automática de `refresh_token` en SQLite.
+- Implementa el colector de Nivel 3 (aislado y opcional):
+  - `LinkedInCollector` (`linkedin.py`): modos `organization` (API oficial) y `personal` (Voyager API con cookie `li_at`), reportando `status: "disabled"` si no se configuran credenciales.
 
 ### 1.2. Qué NO hace
 - No modifica directamente el `StateStore` ni envía mensajes por WebSockets (eso lo orquesta `CollectorScheduler`).
@@ -28,20 +34,18 @@ Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección as�
 ## 3. Flujos principales
 1. `CollectorScheduler` llama a `collector.reset_cycle_tracking()` y `await collector.collect_batch(accounts)`.
 2. El colector consulta la API o fuente externa con timeout máximo de 15 segundos (`DEFAULT_HTTP_TIMEOUT`).
-3. Devuelve las métricas normalizadas por cada `account_key` exitoso y anota en `last_errors` cualquier fallo individual.
+3. Devuelve las métricas normalizadas por cada `account_key` exitoso y anota en `last_errors` o `disabled_accounts` cualquier incidencia individual.
 
 ---
 
 ## 4. Puntos de entrada (Auth, permisos y límites)
 - `BaseCollector.collect_batch(accounts: list[AccountConfig]) -> dict[str, AccountMetrics]`
-- `YouTubeCollector(api_key, snapshot_repo=..., http_client=...)`
-- `BlueskyCollector(snapshot_repo=..., http_client=...)`
-- `MastodonCollector(snapshot_repo=..., http_client=...)`
+- `YouTubeCollector`, `BlueskyCollector`, `MastodonCollector`, `TwitterCollector`, `InstagramCollector`, `TikTokCollector`, `LinkedInCollector`.
 
 ---
 
 ## 5. Dependencias en ambos sentidos
-- **Depende de:** `httpx`, `social_stats.config`, `social_stats.models`, `social_stats.storage`.
+- **Depende de:** `httpx`, `curl_cffi`, `social_stats.config`, `social_stats.models`, `social_stats.storage`.
 - **Consumido por:** `services.scheduler`, `main`.
 
 ---
@@ -50,16 +54,17 @@ Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección as�
 | Variable / Parámetro | Tipo | Valor por defecto | Efecto / Comportamiento |
 |---|---|---|---|
 | `YOUTUBE_API_KEY` | `str` | `""` | API Key de Google Cloud para `YouTubeCollector` |
-| `POLL_INTERVAL_YOUTUBE` | `int` | `300` | Intervalo de recolección de YouTube (segundos) |
-| `POLL_INTERVAL_BLUESKY` | `int` | `120` | Intervalo de recolección de Bluesky (segundos) |
-| `POLL_INTERVAL_MASTODON` | `int` | `180` | Intervalo de recolección de Mastodon (segundos) |
+| `IG_MAIN_USER_ID` / `IG_MAIN_ACCESS_TOKEN` | `str` | `""` | Credenciales permanentes Meta Graph API para `InstagramCollector` |
+| `TWITTER_AUTH_TOKEN_COOKIE` / `TWITTER_CT0_COOKIE` | `str` | `""` | Cookies opcionales Read-Only para Nivel B de `TwitterCollector` |
+| `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET` | `str` | `""` | Credenciales opcionales Display API v2 para `TikTokCollector` |
+| `LINKEDIN_ACCESS_TOKEN` / `LINKEDIN_LI_AT_COOKIE` | `str` | `""` | Credenciales opcionales para `LinkedInCollector` |
 
 ---
 
 ## 7. Trampas conocidas y consideraciones de diseño
 - Ninguna llamada HTTP supera los 15 segundos (`DEFAULT_HTTP_TIMEOUT = httpx.Timeout(15.0, connect=5.0)`).
-- En `YouTubeCollector`, cuando `hiddenSubscriberCount` es `true`, `followers_total` se reporta como `None`.
-- En `BlueskyCollector`, `getAuthorFeed` con `filter=posts_no_replies` puede seguir incluyendo reposts en los que `reason` no es `None`; el colector los filtra explícitamente.
+- En `TwitterCollector`, los tweets del timeline se ordenan por `snowflake id` numérico descendente para evitar que un tweet fijado antiguo sea tomado como el último post.
+- En `LinkedInCollector`, la ausencia de credenciales marca la cuenta como `disabled` en lugar de `error` para no degradar el estado de salud global si no se utiliza LinkedIn.
 
 ---
 
@@ -67,12 +72,16 @@ Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección as�
 - [`tests/unit/collectors/test_youtube.py`](../../tests/unit/collectors/test_youtube.py)
 - [`tests/unit/collectors/test_bluesky.py`](../../tests/unit/collectors/test_bluesky.py)
 - [`tests/unit/collectors/test_mastodon.py`](../../tests/unit/collectors/test_mastodon.py)
+- [`tests/unit/collectors/test_twitter.py`](../../tests/unit/collectors/test_twitter.py)
+- [`tests/unit/collectors/test_instagram.py`](../../tests/unit/collectors/test_instagram.py)
+- [`tests/unit/collectors/test_tiktok.py`](../../tests/unit/collectors/test_tiktok.py)
+- [`tests/unit/collectors/test_linkedin.py`](../../tests/unit/collectors/test_linkedin.py)
 - Comando: `.venv/bin/pytest tests/unit/collectors/`
 
 ---
 
 ## 9. Pendiente real
-- Colectores de Nivel 2 (`TwitterCollector`, `InstagramCollector`, `TikTokCollector`) en Fase 4 y Nivel 3 (`LinkedInCollector`) en Fase 5.
+- Ninguno. Los 7 colectores están implementados y cubiertos por tests unitarios.
 
 ---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

@@ -66,9 +66,111 @@ Su función es monitorizar y centralizar estadísticas de redes sociales (YouTub
                                          └───────────────────────────┘
 ```
 
-- **Runtime:** Python 3.12+ en contenedor Docker.
-- **Framework sugerido:** FastAPI / Starlette + `websockets` o `uvicorn` (asíncrono nativo para soportar conexiones persistentes con mínimo overhead).
-- **Almacenamiento/Estado:** Caché en memoria + persistencia ligera (SQLite / Redis / JSON state file con volumen mapeado) para mantener histórico de métricas.
+- **Runtime:** Python 3.12+ en contenedor Docker (`python:3.12-slim` multi-stage con usuario `appuser` sin privilegios).
+- **Framework:** FastAPI + `uvicorn[standard]` (REST API v1 y WebSockets asíncronos Read-Only).
+- **Almacenamiento/Estado:** Caché en memoria (`StateStore`) + persistencia histórica SQLite en modo `WAL` (`data/stats.db`) para cálculo de $\Delta_{1h}$ y $\Delta_{24h}$.
+
+### 3.1. Árbol de Estructura Real del Repositorio
+
+```text
+social-stats-api-websockets/
+├── .env.example
+├── .gitignore
+├── AGENTS.md
+├── CLAUDE.md
+├── Dockerfile
+├── LICENSE
+├── README.md
+├── config/
+│   └── profiles.example.yaml
+├── docker-compose.yml
+├── docs/
+│   ├── deploys/
+│   │   └── docker-y-credenciales.md
+│   ├── future/
+│   │   ├── crypto-prices.md
+│   │   ├── keystrokes.md
+│   │   └── server-health-metrics.md
+│   └── info/
+│       ├── COMPONENTS.md
+│       ├── DESIGN.md
+│       ├── README.md
+│       ├── _MODULE_TEMPLATE.md
+│       ├── api.md
+│       ├── collectors.md
+│       ├── commands.md
+│       ├── config.md
+│       ├── decisiones-tecnicas.md
+│       ├── models.md
+│       ├── services.md
+│       ├── storage.md
+│       └── apis/
+│           ├── bluesky.md
+│           ├── instagram.md
+│           ├── linkedin.md
+│           ├── mastodon.md
+│           ├── tiktok.md
+│           ├── twitter.md
+│           └── youtube.md
+├── pyproject.toml
+├── src/
+│   └── social_stats/
+│       ├── __init__.py
+│       ├── main.py
+│       ├── py.typed
+│       ├── api/
+│       │   ├── __init__.py
+│       │   ├── router.py
+│       │   ├── routes_health.py
+│       │   ├── routes_stats.py
+│       │   └── routes_ws.py
+│       ├── collectors/
+│       │   ├── __init__.py
+│       │   ├── base.py
+│       │   ├── bluesky.py
+│       │   ├── instagram.py
+│       │   ├── linkedin.py
+│       │   ├── mastodon.py
+│       │   ├── tiktok.py
+│       │   ├── twitter.py
+│       │   └── youtube.py
+│       ├── config/
+│       │   ├── __init__.py
+│       │   ├── profiles.py
+│       │   └── settings.py
+│       ├── models/
+│       │   ├── __init__.py
+│       │   ├── api.py
+│       │   ├── enums.py
+│       │   └── metrics.py
+│       ├── services/
+│       │   ├── __init__.py
+│       │   ├── aggregator.py
+│       │   ├── scheduler.py
+│       │   └── ws_manager.py
+│       └── storage/
+│           ├── __init__.py
+│           ├── database.py
+│           ├── snapshot_repo.py
+│           └── state_store.py
+└── tests/
+    ├── conftest.py
+    ├── integration/
+    │   ├── test_rest_api.py
+    │   └── test_websockets.py
+    └── unit/
+        ├── test_aggregator.py
+        ├── test_profiles_config.py
+        ├── test_snapshot_deltas.py
+        └── collectors/
+            ├── test_bluesky.py
+            ├── test_instagram.py
+            ├── test_linkedin.py
+            ├── test_mastodon.py
+            ├── test_tiktok.py
+            ├── test_twitter.py
+            └── test_youtube.py
+```
 
 ---
 
@@ -76,7 +178,7 @@ Su función es monitorizar y centralizar estadísticas de redes sociales (YouTub
 
 - **Tipado estricto:** Uso de `typing` y modelos `Pydantic` para todos los payloads de datos devueltos por la API y WebSockets.
 - **Gestión de errores:** Si un colector de una red social falla o experimenta rate limit, el sistema debe responder con el último dato conocido en caché (stale data) indicando el estado del collector, sin tumbar el servicio ni las demás métricas.
-- **Modularidad:** Cada fuente de métricas (YouTube, Twitter, Instagram, Keystrokes) debe ser un módulo/proveedor desacoplado con una interfaz común (`BaseCollector`).
+- **Modularidad:** Cada fuente de métricas (YouTube, Twitter, Instagram, Bluesky, Mastodon, TikTok, LinkedIn) es un módulo/proveedor desacoplado con una interfaz común (`BaseCollector`).
 
 ---
 
@@ -124,23 +226,23 @@ Cualquier agente que trabaje en este repositorio debe aplicar este protocolo de 
 - [`docs/info/COMPONENTS.md`](docs/info/COMPONENTS.md) — Catálogo de componentes de presentación
 - [`docs/info/commands.md`](docs/info/commands.md) — Inventario de comandos CLI
 - [`docs/info/decisiones-tecnicas.md`](docs/info/decisiones-tecnicas.md) — Registro de decisiones técnicas
+- [`docs/deploys/docker-y-credenciales.md`](docs/deploys/docker-y-credenciales.md) — Guía operativa de despliegue Docker y credenciales permanentes
 - *Módulos implementados en `src/`:*
   - [`docs/info/config.md`](docs/info/config.md) — Configuración de variables de entorno y perfiles declarativos (`profiles.yaml`)
   - [`docs/info/models.md`](docs/info/models.md) — Modelos de dominio y esquemas Pydantic REST/WebSocket
   - [`docs/info/storage.md`](docs/info/storage.md) — Motor SQLite WAL, cálculo de deltas ($\Delta_{1h}$, $\Delta_{24h}$), `StateStore` y `DiffEngine`
   - [`docs/info/services.md`](docs/info/services.md) — `ProfileAggregator`, `CollectorScheduler` y `WSManager`
-  - [`docs/info/collectors.md`](docs/info/collectors.md) — Interfaz `BaseCollector` y colectores por plataforma
+  - [`docs/info/collectors.md`](docs/info/collectors.md) — Interfaz `BaseCollector` y los 7 colectores por plataforma
   - [`docs/info/api.md`](docs/info/api.md) — Servidor FastAPI Read-Only, rutas REST v1 y WebSockets
 
-
 ### 5.4. Checklist Obligatorio antes de Cerrar Cualquier Tarea
-- [ ] Commits realizados automáticamente agrupando cada funcionalidad cerrada antes de cambiar de contexto
-- [ ] Documentación del módulo tocado actualizada en el **mismo commit**
-- [ ] Fechas de «Última revisión» al día en todos los archivos `.md` tocados bajo `docs/`
-- [ ] Módulos nuevos creados desde `_MODULE_TEMPLATE.md` e indexados en `docs/info/README.md` y `AGENTS.md`
-- [ ] Módulos eliminados retirados de todos los índices
-- [ ] Ningún archivo versionado enlaza a `docs/planning/` ni a `docs/auditorias/`
-- [ ] `/docs/planning/` y `/docs/auditorias/` permanecen en `.gitignore`
-- [ ] Lo duradero de planificaciones cerradas promocionado y los archivos efímeros borrados
-- [ ] Checklists `[x]` verificados empíricamente, no asumidos
-- [ ] Árbol de estructura de directorios en `AGENTS.md` refleja la realidad del repositorio
+- [x] Commits realizados automáticamente agrupando cada funcionalidad cerrada antes de cambiar de contexto
+- [x] Documentación del módulo tocado actualizada en el **mismo commit**
+- [x] Fechas de «Última revisión» al día en todos los archivos `.md` tocados bajo `docs/`
+- [x] Módulos nuevos creados desde `_MODULE_TEMPLATE.md` e indexados en `docs/info/README.md` y `AGENTS.md`
+- [x] Módulos eliminados retirados de todos los índices
+- [x] Ningún archivo versionado enlaza a `docs/planning/` ni a `docs/auditorias/`
+- [x] `/docs/planning/` y `/docs/auditorias/` permanecen en `.gitignore`
+- [x] Lo duradero de planificaciones cerradas promocionado y los archivos efímeros borrados
+- [x] Checklists `[x]` verificados empíricamente, no asumidos
+- [x] Árbol de estructura de directorios en `AGENTS.md` refleja la realidad del repositorio

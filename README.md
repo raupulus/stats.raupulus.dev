@@ -52,11 +52,34 @@ El servicio está concebido para operar en entornos locales y redes privadas acc
 
 ---
 
+## Inicio Rápido (Docker Compose)
+
+```bash
+cp .env.example .env
+cp config/profiles.example.yaml config/profiles.yaml
+mkdir -p data
+docker compose up --build -d
+```
+
+### Endpoints REST Principales (Read-Only)
+- `GET /api/v1/health` — Salud del contenedor, base de datos SQLite y estado de colectores.
+- `GET /api/v1/profiles` — Catálogo de perfiles configurados.
+- `GET /api/v1/stats` — Estadísticas globales (filtrables con `?profile=` y `?platform=`).
+- `GET /api/v1/profiles/{profile_id}/stats` — Estadísticas agregadas y por cuenta de un perfil.
+- `GET /api/v1/profiles/{profile_id}/history?window=24h` — Serie temporal histórica (`1h`, `24h`, `7d`, `30d`).
+
+### Canales WebSocket en Tiempo Real (Read-Only)
+- `ws://<host>:8000/ws/stats` — Stream global de todos los perfiles (`?profile={id}&platform={p}`).
+- `ws://<host>:8000/ws/profiles/{profile_id}` — Stream exclusivo de un perfil específico.
+
+---
+
 ## Documentación Técnica
 
 La documentación del proyecto sigue un estricto protocolo de actualización continua sincronizado con el código:
 
 - **[Índice Maestro de Documentación Viva (`docs/info/`)](docs/info/README.md):** Estado técnico verificado de módulos, componentes y contratos.
+- **[Guía de Despliegue y Credenciales Permanentes (`docs/deploys/docker-y-credenciales.md`)](docs/deploys/docker-y-credenciales.md):** Configuración paso a paso de Docker, VPN y API Keys sin caducidad.
 - **[Decisiones Técnicas (`docs/info/decisiones-tecnicas.md`)](docs/info/decisiones-tecnicas.md):** Registro inmutable de decisiones arquitectónicas del sistema.
 - **[Guía de Diseño Visual (`docs/info/DESIGN.md`)](docs/info/DESIGN.md):** Pautas de diseño para visualización en pantallas de escritorio.
 - **[Catálogo de Componentes (`docs/info/COMPONENTS.md`)](docs/info/COMPONENTS.md):** Especificación de componentes de presentación para dashboards.

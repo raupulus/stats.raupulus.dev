@@ -18,6 +18,7 @@ from social_stats.api.router import api_v1_router, ws_router
 from social_stats.collectors.base import BaseCollector
 from social_stats.collectors.bluesky import BlueskyCollector
 from social_stats.collectors.instagram import InstagramCollector
+from social_stats.collectors.linkedin import LinkedInCollector
 from social_stats.collectors.mastodon import MastodonCollector
 from social_stats.collectors.tiktok import TikTokCollector
 from social_stats.collectors.twitter import TwitterCollector
@@ -72,6 +73,12 @@ def build_default_collectors(
             db=db,
             snapshot_repo=snapshot_repo,
             use_curl_cffi=True,
+        ),
+        Platform.LINKEDIN: LinkedInCollector(
+            access_token=settings.linkedin_access_token,
+            li_at_cookie=settings.linkedin_li_at_cookie,
+            db=db,
+            snapshot_repo=snapshot_repo,
         ),
     }
     return collectors

@@ -298,3 +298,73 @@ def test_exponential_backoff_calculation() -> None:
 
     with_jitter = calculate_backoff_delay(300, 0, apply_jitter=True)
     assert 285.0 <= with_jitter <= 315.0
+
+
+class _PartialBatchCollector(BaseCollector):
+    platform = Platform.YOUTUBE
+
+    async def collect_batch(
+        self, accounts: list[AccountConfig]
+    ) -> dict[str, AccountMetrics]:
+        # Return only the first account; record an error for the rest
+        out: dict[str, AccountMetrics] = {}
+        for idx, acc in enumerate(accounts):
+            if idx == 0:
+                out[acc.account_key] = AccountMetrics(
+                    followers_total=1000, posts_total=10, views_total=5000
+                )
+            else:
+                self.record_account_error(acc.account_key, "Channel temporarily unavailable")
+        return out
+
+
+async def test_scheduler_background_lifecycle_and_restart_hydration(
+    memory_db: Database,
+    snapshot_repo: SnapshotRepository,
+    sample_registry: ProfilesRegistry,
+) -> None:
+    """
+    Verify:
+    - CollectorScheduler.start() and stop() run background platform and pruning loops cleanly.
+    - Partial account failures within a batch mark only missing accounts as failed.
+    - StateStore.initialize_from_config_and_db() restores persisted state from SQLite on restart.
+    """
+    import asyncio
+
+    store1 = StateStore(memory_db)
+    await store1.initialize_from_config_and_db(sample_registry)
+    agg1 = ProfileAggregator(sample_registry, store1)
+
+    partial_collector = _PartialBatchCollector()
+    scheduler = CollectorScheduler(
+        settings=Settings(poll_interval_youtube=60),
+        registry=sample_registry,
+        collectors={Platform.YOUTUBE: partial_collector},
+        snapshot_repo=snapshot_repo,
+        state_store=store1,
+        aggregator=agg1,
+    )
+
+    scheduler.start()
+    await asyncio.sleep(0.05)
+    await scheduler.stop()
+
+    # First YouTube channel succeeded; second channel recorded error
+    st_ok = store1.get_account_state(Platform.YOUTUBE, "UC1111111111111111111111")
+    assert st_ok is not None
+    assert st_ok.status == CollectorStatus.HEALTHY
+    assert st_ok.metrics.followers_total == 1000
+
+    st_err = store1.get_account_state(Platform.YOUTUBE, "UC2222222222222222222222")
+    assert st_err is not None
+    assert st_err.status == CollectorStatus.ERROR
+    assert store1.get_consecutive_failures(Platform.YOUTUBE, "UC2222222222222222222222") >= 1
+
+    # Simulate container restart by creating a brand new StateStore against the same SQLite DB
+    store2 = StateStore(memory_db)
+    await store2.initialize_from_config_and_db(sample_registry)
+    restored = store2.get_account_state(Platform.YOUTUBE, "UC1111111111111111111111")
+    assert restored is not None
+    assert restored.metrics.followers_total == 1000
+    assert restored.status == CollectorStatus.HEALTHY
+

@@ -51,4 +51,12 @@ Registro de decisiones técnicas deliberadas del proyecto. Este documento previe
 - **Consecuencia:** No se programan ni modelan endpoints de captura de pulsaciones en la API actual.
 
 ---
+
+## DT-007: Batching Multicanal en YouTube Data API v3 y Declaración Explícita de Capacidades (`metrics_supported`)
+- **Fecha:** 2026-10-28
+- **Decisión:** El colector de YouTube agrupa hasta 50 `channel_id` en una única llamada HTTP (`channels.list?id=id1,id2...`, 1 unidad de cuota total) independientemente de a qué perfil pertenezca cada canal. Además, cada cuenta declara explícitamente `metrics_supported` (`views: bool`, `followers: bool`) devolviendo `null` cuando una red social no ofrece contadores globales de visualizaciones de perfil (Bluesky, Mastodon, Twitter/X, Instagram, TikTok, LinkedIn).
+- **Motivo:** Reducir en >90% el consumo de cuota diaria de Google Cloud (10.000 unidades/día) y evitar confundir «métrica no disponible en la plataforma» (`null`) con «0 visitas reales» (`0`).
+- **Consecuencia:** `ProfileAggregator` ignora los valores `None` al sumar vistas de un perfil y solo reporta `total_views` si al menos una cuenta del perfil soporta vistas (`views=True`).
+
+---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28
