@@ -2,7 +2,7 @@
 
 - **Fuente oficial:** `https://api.raupulus.dev/api/v2/keycounter/stats`
 - **Colector:** [`KeycounterCollector`](../../../src/social_stats/collectors/keycounter.py)
-- **Estado:** ✅ Implementado en `src/social_stats/collectors/keycounter.py`. ⚠️ *Nota de verificación empírica (2026-10-28):* Al consultar `GET https://api.raupulus.dev/api/v2/keycounter/stats` en producción durante la prueba en vivo, el enrutador API V2 respondió `HTTP 404 {"success":false,"message":"API V2 - Endpoint no encontrado"}` (ruta pendiente de activación/despliegue en el servidor `api.raupulus.dev`); el contrato JSON `200 OK` proporcionado está implementado y verificado con tests unitarios e integración.
+- **Estado:** ✅ **Verificado empíricamente en vivo contra producción** (2026-10-28 22:12 UTC). La llamada `GET https://api.raupulus.dev/api/v2/keycounter/stats` con cabecera Bearer Token responde `HTTP 200 OK` con formato `application/json` conforme a la especificación, alimentando métricas de pulsaciones (`lifetime`, `today`, `last_hour`) y clics de ratón en tiempo real.
 
 ---
 
