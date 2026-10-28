@@ -45,10 +45,13 @@
 
   const state = {
     profiles: {},
-    selectedProfileId: ALL_PROFILES_ID,
+    selectedProfileIds: new Set(),
+    initializedProfiles: false,
     selectedCategory: "all",
     eventsCount: 0,
     recentUpdates: [],
+    flashedCardKey: "",
+    flashTimer: null,
     ws: null,
     reconnectAttempt: 0,
     reconnectTimer: null,
@@ -161,15 +164,31 @@
     }
   }
 
-  function getActiveProfilesList() {
+  function syncSelectedProfilesWithState() {
     const allIds = Object.keys(state.profiles);
-    if (
-      state.selectedProfileId !== ALL_PROFILES_ID &&
-      state.profiles[state.selectedProfileId]
-    ) {
-      return [state.profiles[state.selectedProfileId]];
+    if (allIds.length === 0) {
+      return;
     }
-    return allIds.map((pid) => state.profiles[pid]);
+    for (const id of Array.from(state.selectedProfileIds)) {
+      if (!state.profiles[id]) {
+        state.selectedProfileIds.delete(id);
+      }
+    }
+    if (!state.initializedProfiles || state.selectedProfileIds.size === 0) {
+      for (const id of allIds) {
+        state.selectedProfileIds.add(id);
+      }
+      state.initializedProfiles = true;
+    }
+  }
+
+  function getActiveProfilesList() {
+    syncSelectedProfilesWithState();
+    const allIds = Object.keys(state.profiles);
+    const active = allIds
+      .filter((pid) => state.selectedProfileIds.has(pid))
+      .map((pid) => state.profiles[pid]);
+    return active.length > 0 ? active : allIds.map((pid) => state.profiles[pid]);
   }
 
   function countProfileAccounts(profileObj) {
@@ -193,72 +212,56 @@
       return;
     }
 
+    syncSelectedProfilesWithState();
     const profileIds = Object.keys(state.profiles);
-    if (
-      state.selectedProfileId !== ALL_PROFILES_ID &&
-      !state.profiles[state.selectedProfileId]
-    ) {
-      state.selectedProfileId = ALL_PROFILES_ID;
-    }
-
     const cards = [];
 
-    // Tarjeta 0: Vista Global Consolidada
-    let totalGlobalAccounts = 0;
-    const seenKeys = new Set();
-    for (const pid of profileIds) {
-      const prof = state.profiles[pid];
-      if (!prof || !prof.platforms) continue;
-      for (const [plat, sum] of Object.entries(prof.platforms)) {
-        for (const acc of sum.accounts || []) {
-          const uniqueId = `${plat}:${acc.account_key}`;
-          if (!seenKeys.has(uniqueId)) {
-            seenKeys.add(uniqueId);
-            totalGlobalAccounts += 1;
-          }
-        }
-      }
-    }
-
-    cards.push(
-      buildProfileSelectorCard({
-        profileId: ALL_PROFILES_ID,
-        initials: "GL",
-        name: "Todos los Perfiles (Global)",
-        description: "Supervisión agregada de todas las redes, cripto y periféricos públicos",
-        accountsCount: totalGlobalAccounts,
-        slugText: `perfiles: ${profileIds.length}`,
-        isActive: state.selectedProfileId === ALL_PROFILES_ID,
-      })
-    );
-
-    for (const pid of profileIds) {
-      const prof = state.profiles[pid];
-      const initials = (prof.name || pid)
-        .replace(/[^a-zA-Z0-9]/g, "")
-        .slice(0, 2)
-        .toUpperCase() || "PR";
+    if (profileIds.length === 0) {
       cards.push(
         buildProfileSelectorCard({
-          profileId: pid,
-          initials,
-          name: prof.name || pid,
-          description: prof.description || "Perfil público monitorizado en tiempo real",
-          accountsCount: countProfileAccounts(prof),
-          slugText: `@${pid}`,
-          isActive: state.selectedProfileId === pid,
+          profileId: ALL_PROFILES_ID,
+          initials: "GL",
+          name: "Todos los Perfiles (Global)",
+          description: "Sincronizando perfiles públicos desde /ws/public…",
+          accountsCount: 0,
+          slugText: "conectando…",
+          isActive: true,
         })
       );
+    } else {
+      for (const pid of profileIds) {
+        const prof = state.profiles[pid];
+        const initials =
+          (prof.name || pid)
+            .replace(/[^a-zA-Z0-9]/g, "")
+            .slice(0, 2)
+            .toUpperCase() || "PR";
+        const isActive = state.selectedProfileIds.has(pid);
+        cards.push(
+          buildProfileSelectorCard({
+            profileId: pid,
+            initials,
+            name: prof.name || pid,
+            description:
+              prof.description || "Perfil público monitorizado en tiempo real",
+            accountsCount: countProfileAccounts(prof),
+            slugText: `@${pid}`,
+            isActive,
+          })
+        );
+      }
     }
 
     grid.replaceChildren(...cards);
 
     if (contextLabel) {
-      if (state.selectedProfileId === ALL_PROFILES_ID) {
+      const activeNames = profileIds
+        .filter((pid) => state.selectedProfileIds.has(pid))
+        .map((pid) => state.profiles[pid].name || pid);
+      if (activeNames.length === 0) {
         contextLabel.textContent = "Todos los perfiles (Global)";
       } else {
-        const activeProf = state.profiles[state.selectedProfileId];
-        contextLabel.textContent = activeProf ? activeProf.name : state.selectedProfileId;
+        contextLabel.textContent = activeNames.join(" + ");
       }
     }
   }
@@ -301,13 +304,27 @@
     const activeBadge = el(
       "span",
       "profile-active-badge",
-      isActive ? "✓ ACTIVO" : "SELECCIONAR"
+      isActive ? "✓ ACTIVO" : "OCULTO · ACTIVAR"
     );
     bottomRow.append(slugNode, activeBadge);
 
     btn.append(topRow, bottomRow);
     btn.addEventListener("click", () => {
-      state.selectedProfileId = profileId;
+      if (profileId === ALL_PROFILES_ID) {
+        return;
+      }
+      const allIds = Object.keys(state.profiles);
+      if (state.selectedProfileIds.has(profileId)) {
+        if (state.selectedProfileIds.size > 1) {
+          state.selectedProfileIds.delete(profileId);
+        } else {
+          for (const id of allIds) {
+            state.selectedProfileIds.add(id);
+          }
+        }
+      } else {
+        state.selectedProfileIds.add(profileId);
+      }
       renderAll();
     });
 
@@ -332,7 +349,7 @@
     return byPlatform;
   }
 
-  function renderSocialSection(byPlatform) {
+  function renderSocialSection(activeProfiles, byPlatform) {
     const grid = document.getElementById("social-platforms-grid");
     const activeCountNode = document.getElementById("active-social-count");
     const kpiFollowers = document.getElementById("kpi-total-followers");
@@ -352,63 +369,27 @@
     let grandPosts = 0;
     let activeSocialPlatforms = 0;
 
-    const cards = [];
-
     for (const platKey of SOCIAL_PLATFORMS_ORDER) {
       const accMap = byPlatform[platKey];
       if (!accMap || accMap.size === 0) {
         continue;
       }
       activeSocialPlatforms += 1;
-      const accounts = Array.from(accMap.values());
-
-      let platFollowers = 0;
-      let platFollowers24h = 0;
-      let platPosts = 0;
-      let platViews = null;
-      let platViews24h = null;
-      let platViews1h = null;
-      let hasStale = false;
-
-      for (const acc of accounts) {
+      for (const acc of accMap.values()) {
         const m = acc.metrics || {};
-        platFollowers += Number(m.followers_total || 0);
-        platFollowers24h += Number(m.followers_last_24h || 0);
-        platPosts += Number(m.posts_total || 0);
+        grandFollowers += Number(m.followers_total || 0);
+        grandFollowers24h += Number(m.followers_last_24h || 0);
+        grandPosts += Number(m.posts_total || 0);
         if (m.views_total !== null && m.views_total !== undefined) {
-          platViews = (platViews || 0) + Number(m.views_total);
+          grandViews += Number(m.views_total);
         }
         if (m.views_last_24h !== null && m.views_last_24h !== undefined) {
-          platViews24h = (platViews24h || 0) + Number(m.views_last_24h);
+          grandViews24h += Number(m.views_last_24h);
         }
         if (m.views_last_1h !== null && m.views_last_1h !== undefined) {
-          platViews1h = (platViews1h || 0) + Number(m.views_last_1h);
-        }
-        if (acc.status && acc.status !== "healthy") {
-          hasStale = true;
+          grandViews1h += Number(m.views_last_1h);
         }
       }
-
-      grandFollowers += platFollowers;
-      grandFollowers24h += platFollowers24h;
-      grandPosts += platPosts;
-      if (platViews !== null) grandViews += platViews;
-      if (platViews24h !== null) grandViews24h += platViews24h;
-      if (platViews1h !== null) grandViews1h += platViews1h;
-
-      cards.push(
-        buildSocialPlatformCard({
-          platKey,
-          accounts,
-          platFollowers,
-          platFollowers24h,
-          platPosts,
-          platViews,
-          platViews24h,
-          platViews1h,
-          hasStale,
-        })
-      );
     }
 
     if (activeCountNode) {
@@ -436,7 +417,107 @@
       applyDeltaClass(kpiDeltaViews1h, grandViews1h);
     }
 
-    if (cards.length === 0) {
+    const groupNodes = [];
+    for (const prof of activeProfiles) {
+      if (!prof || !prof.platforms) continue;
+      const pid = prof.profile_id || prof.name || "perfil";
+      const profileCards = [];
+      let profFollowers = 0;
+      let profViews = 0;
+      let profPosts = 0;
+
+      for (const platKey of SOCIAL_PLATFORMS_ORDER) {
+        const summary = prof.platforms[platKey];
+        if (!summary || !Array.isArray(summary.accounts) || summary.accounts.length === 0) {
+          continue;
+        }
+        const accounts = summary.accounts;
+        let platFollowers = 0;
+        let platFollowers24h = 0;
+        let platPosts = 0;
+        let platViews = null;
+        let platViews24h = null;
+        let platViews1h = null;
+        let hasStale = false;
+
+        for (const acc of accounts) {
+          const m = acc.metrics || {};
+          platFollowers += Number(m.followers_total || 0);
+          platFollowers24h += Number(m.followers_last_24h || 0);
+          platPosts += Number(m.posts_total || 0);
+          if (m.views_total !== null && m.views_total !== undefined) {
+            platViews = (platViews || 0) + Number(m.views_total);
+          }
+          if (m.views_last_24h !== null && m.views_last_24h !== undefined) {
+            platViews24h = (platViews24h || 0) + Number(m.views_last_24h);
+          }
+          if (m.views_last_1h !== null && m.views_last_1h !== undefined) {
+            platViews1h = (platViews1h || 0) + Number(m.views_last_1h);
+          }
+          if (acc.status && acc.status !== "healthy") {
+            hasStale = true;
+          }
+        }
+
+        profFollowers += platFollowers;
+        profPosts += platPosts;
+        if (platViews !== null) {
+          profViews += platViews;
+        }
+
+        profileCards.push(
+          buildSocialPlatformCard({
+            profileId: pid,
+            platKey,
+            accounts,
+            platFollowers,
+            platFollowers24h,
+            platPosts,
+            platViews,
+            platViews24h,
+            platViews1h,
+            hasStale,
+          })
+        );
+      }
+
+      if (profileCards.length === 0) {
+        continue;
+      }
+
+      const groupBox = el("section", "profile-social-group");
+      groupBox.dataset.profileId = pid;
+
+      const groupHeader = el("div", "profile-group-header");
+      const titleWrap = el("div", "");
+      titleWrap.append(el("h3", "profile-group-title", prof.name || pid));
+
+      const subtitleLine = el("p", "profile-group-subtitle");
+      subtitleLine.append(
+        document.createTextNode("Seguidores del perfil: "),
+        el("strong", "", formatInt(profFollowers)),
+        document.createTextNode(" · Visualizaciones: "),
+        el("strong", "", formatInt(profViews)),
+        document.createTextNode(" · Publicaciones: "),
+        el("strong", "", formatInt(profPosts))
+      );
+      titleWrap.append(subtitleLine);
+
+      const groupPill = el(
+        "span",
+        "profile-group-pill",
+        `@${pid} · ${profileCards.length} ${profileCards.length === 1 ? "red social" : "redes sociales"}`
+      );
+      groupHeader.append(titleWrap, groupPill);
+
+      const innerGrid = el("div", "profile-group-platforms-grid");
+      innerGrid.append(...profileCards);
+
+      groupBox.append(groupHeader, innerGrid);
+      groupNodes.push(groupBox);
+    }
+
+    if (groupNodes.length === 0) {
       grid.replaceChildren(
         el(
           "div",
@@ -445,11 +526,12 @@
         )
       );
     } else {
-      grid.replaceChildren(...cards);
+      grid.replaceChildren(...groupNodes);
     }
   }
 
   function buildSocialPlatformCard({
+    profileId,
     platKey,
     accounts,
     platFollowers,
@@ -465,8 +547,10 @@
       name: platKey,
     };
 
-    const card = el("article", "platform-card");
+    const isFlashed = state.flashedCardKey === `${profileId}:${platKey}`;
+    const card = el("article", `platform-card${isFlashed ? " is-flash" : ""}`);
     card.dataset.platform = platKey;
+    card.dataset.profileId = profileId;
 
     const header = el("div", "platform-card-header");
     const titleGroup = el("div", "platform-title-group");
@@ -702,7 +786,7 @@
     renderProfileSelectorCards();
     const activeProfiles = getActiveProfilesList();
     const byPlatform = collectDeduplicatedAccountsByPlatform(activeProfiles);
-    renderSocialSection(byPlatform);
+    renderSocialSection(activeProfiles, byPlatform);
     renderCryptoSection(byPlatform);
     renderKeycounterSection(byPlatform);
     renderTelemetrySpecRow();
@@ -721,10 +805,49 @@
         description: "",
         platforms: {},
       };
+      state.selectedProfileIds.add(pid);
     }
     if (data.platform_summary) {
-      state.profiles[pid].platforms[plat] = data.platform_summary;
+      const prevSummary = state.profiles[pid].platforms[plat];
+      const prevAccounts =
+        prevSummary && Array.isArray(prevSummary.accounts)
+          ? prevSummary.accounts
+          : [];
+      const incomingAccounts = Array.isArray(data.platform_summary.accounts)
+        ? data.platform_summary.accounts
+        : [];
+      let mergedAccounts = incomingAccounts;
+      if (mergedAccounts.length === 0 && prevAccounts.length > 0) {
+        mergedAccounts = prevAccounts.slice();
+      }
+      if (data.account && data.account.account_key) {
+        const idx = mergedAccounts.findIndex(
+          (a) => a && a.account_key === data.account.account_key
+        );
+        if (idx >= 0) {
+          mergedAccounts[idx] = data.account;
+        } else {
+          mergedAccounts.push(data.account);
+        }
+      }
+      state.profiles[pid].platforms[plat] = {
+        ...data.platform_summary,
+        accounts: mergedAccounts,
+      };
     }
+
+    state.flashedCardKey = `${pid}:${plat}`;
+    if (state.flashTimer) {
+      clearTimeout(state.flashTimer);
+    }
+    state.flashTimer = window.setTimeout(() => {
+      state.flashedCardKey = "";
+      state.flashTimer = null;
+      const flashedNodes = document.querySelectorAll(".platform-card.is-flash");
+      for (const node of flashedNodes) {
+        node.classList.remove("is-flash");
+      }
+    }, 1200);
 
     const changes = data.changes || {};
     const changedKeys = Object.keys(changes);

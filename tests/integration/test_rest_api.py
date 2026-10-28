@@ -410,12 +410,21 @@ async def test_public_web_entrypoint_and_dom_security(
 
     css_resp = await seeded_api_app.get("/css/styles.css", headers={"Authorization": ""})
     assert css_resp.status_code == 200
-    for token in ("#091421", "#050f1c", "#a3c9ff", "#3272b8", "#4cd6ff"):
+    for token in (
+        "#091421",
+        "#050f1c",
+        "#a3c9ff",
+        "#3272b8",
+        "#4cd6ff",
+        ".profile-social-group",
+        ".profile-group-platforms-grid",
+    ):
         assert token in css_resp.text
 
     js_resp = await seeded_api_app.get("/js/app.js", headers={"Authorization": ""})
     assert js_resp.status_code == 200
     assert "/ws/public" in js_resp.text
+    assert "profile-social-group" in js_resp.text
     assert "textContent" in js_resp.text
     # Ensure no executable code uses innerHTML, outerHTML, insertAdjacentHTML, document.write, or eval
     code_lines = [

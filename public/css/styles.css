@@ -544,10 +544,75 @@ body {
   background: rgba(255, 180, 171, 0.08);
 }
 
-/* Tarjetas por Plataforma Social */
+/* Agrupación por Perfil Social y Tarjetas por Plataforma */
 .social-platforms-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.profile-social-group {
+  background: linear-gradient(
+    145deg,
+    rgba(18, 28, 42, 0.78) 0%,
+    rgba(9, 20, 33, 0.9) 60%,
+    rgba(5, 15, 28, 0.95) 100%
+  );
+  border: 1px solid rgba(163, 201, 255, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 1.35rem;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.profile-group-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(163, 201, 255, 0.12);
+}
+
+.profile-group-title {
+  font-family: var(--font-headline);
+  font-size: clamp(1.1rem, 1.6vw, 1.3rem);
+  font-weight: 700;
+  color: var(--color-on-surface);
+  letter-spacing: -0.01em;
+}
+
+.profile-group-subtitle {
+  font-size: 0.84rem;
+  color: var(--color-on-surface-variant);
+  margin-top: 0.25rem;
+}
+
+.profile-group-subtitle strong {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-on-surface);
+  font-weight: 600;
+}
+
+.profile-group-pill {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.32rem 0.8rem;
+  border-radius: var(--radius-pill);
+  background: rgba(5, 15, 28, 0.82);
+  border: 1px solid rgba(76, 214, 255, 0.3);
+  color: var(--color-tertiary);
+  white-space: nowrap;
+}
+
+.profile-group-platforms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 1.1rem;
 }
 
