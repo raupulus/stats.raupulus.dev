@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from abc import ABC, abstractmethod
 
 import httpx
@@ -17,12 +18,37 @@ DEFAULT_USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 )
 
+_URL_PATTERN = re.compile(r"https?://[^\s\"'<>]+", re.IGNORECASE)
+_BEARER_PATTERN = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._\-~+/]+=*")
+_SECRET_KV_PATTERN = re.compile(
+    r"(?i)\b(key|api_key|access_token|refresh_token|client_secret|token|li_at|auth_token|ct0)"
+    r"(\s*[=:]\s*)([^\s&\"',;]+)"
+)
+MAX_SANITIZED_ERROR_LENGTH = 240
+
+
+def sanitize_error_message(message: str | None, *, max_length: int = MAX_SANITIZED_ERROR_LENGTH) -> str:
+    """
+    Redact full URLs, query parameters, Bearer tokens, and secret key-value pairs
+    from collector/transport error messages before logging, caching, or persisting.
+    """
+    if not message:
+        return ""
+    cleaned = _URL_PATTERN.sub("[REDACTED_URL]", str(message))
+    cleaned = _BEARER_PATTERN.sub("Bearer [REDACTED]", cleaned)
+    cleaned = _SECRET_KV_PATTERN.sub(r"\1\2[REDACTED]", cleaned)
+    cleaned = " ".join(cleaned.split())
+    if len(cleaned) > max_length:
+        return f"{cleaned[: max_length - 3]}..."
+    return cleaned
+
 
 class CollectorError(Exception):
     """Raised when a collector encounters an upstream HTTP or parsing failure."""
 
     def __init__(self, message: str, *, status_code: int | None = None) -> None:
-        super().__init__(message)
+        sanitized = sanitize_error_message(message)
+        super().__init__(sanitized)
         self.status_code = status_code
 
 
@@ -53,12 +79,12 @@ class BaseCollector(ABC):
         self._cycle_now_ts = now_ts
 
     def record_account_error(self, account_key: str, error_message: str) -> None:
-        """Record an error for a specific account without aborting the rest of the batch."""
-        self.last_errors[account_key] = error_message
+        """Record a sanitized error for a specific account without aborting the batch."""
+        self.last_errors[account_key] = sanitize_error_message(error_message)
 
     def record_account_disabled(self, account_key: str, reason: str) -> None:
         """Mark a specific account as disabled due to missing optional credentials."""
-        self.disabled_accounts[account_key] = reason
+        self.disabled_accounts[account_key] = sanitize_error_message(reason)
 
     async def enrich_with_snapshots(
         self,

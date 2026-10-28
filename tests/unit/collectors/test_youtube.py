@@ -75,6 +75,8 @@ async def test_youtube_batch_multichannel_and_snapshot_deltas(
     assert batch_route.call_count == 1
     request = batch_route.calls[0].request
     assert request.url.params["id"] == f"{cid_1},{cid_2}"
+    assert "key" not in request.url.params
+    assert request.headers.get("X-Goog-Api-Key") == "test_google_key"
 
     assert results[cid_1].followers_total == 15200
     assert results[cid_1].posts_total == 280
@@ -97,6 +99,8 @@ async def test_youtube_handle_resolution_and_missing_channel() -> None:
     missing_cid = "UC0000000000000000000000"
 
     def youtube_handler(request: httpx.Request) -> httpx.Response:
+        assert "key" not in request.url.params
+        assert request.headers.get("X-Goog-Api-Key") == "test_google_key"
         params = dict(request.url.params)
         if "forHandle" in params:
             return httpx.Response(200, json={"items": [{"id": resolved_cid}]})

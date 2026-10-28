@@ -60,8 +60,8 @@ class YouTubeCollector(BaseCollector):
             params={
                 "part": "id",
                 "forHandle": clean_handle,
-                "key": self.api_key,
             },
+            headers={"X-Goog-Api-Key": self.api_key},
         )
         if resp.status_code != 200:
             raise CollectorError(
@@ -121,8 +121,8 @@ class YouTubeCollector(BaseCollector):
                 params={
                     "part": "statistics,snippet",
                     "id": ",".join(chunk_ids),
-                    "key": self.api_key,
                 },
+                headers={"X-Goog-Api-Key": self.api_key},
             )
             if resp.status_code != 200:
                 raise CollectorError(

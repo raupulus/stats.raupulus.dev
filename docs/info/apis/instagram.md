@@ -6,7 +6,7 @@ Estrategia de doble nivel para Instagram: Nivel A (Meta Graph API v21.0 con Syst
 
 ## 1. Endpoints Utilizados
 1. **Nivel A — Meta Graph API (Con `IG_{REF}_USER_ID` e `IG_{REF}_ACCESS_TOKEN`):**
-   - `GET https://graph.facebook.com/v21.0/{ig_user_id}?fields=followers_count,media_count,media.limit(1){id,permalink,timestamp,media_type,like_count,comments_count,play_count}&access_token={TOKEN}`
+   - `GET https://graph.facebook.com/v21.0/{ig_user_id}?fields=followers_count,media_count,media.limit(1){id,permalink,timestamp,media_type,like_count,comments_count,play_count}` (cabecera `Authorization: Bearer {TOKEN}`)
 2. **Nivel B — Web Profile API (Sin token o en fallback de Nivel A):**
    - `GET https://www.instagram.com/api/v1/users/web_profile_info/?username={handle}` (cabecera `x-ig-app-id: 936619743392459`).
 

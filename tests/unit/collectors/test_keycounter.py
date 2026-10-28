@@ -146,3 +146,39 @@ async def test_keycounter_collector_404_and_error_handling() -> None:
     assert "HTTP 404" in collector.last_errors["acc404"]
     assert "API V2 - Endpoint no encontrado" in collector.last_errors["acc404"]
     assert "Token inválido" in collector.last_errors["accfalse"]
+
+
+async def test_error_sanitization_redacts_urls_and_tokens(
+    snapshot_repo: SnapshotRepository,
+) -> None:
+    """
+    Verify that sanitize_error_message, BaseCollector, and StateStore strip full URLs,
+    query strings, Bearer tokens, and secret key-value pairs from error messages.
+    """
+    from social_stats.collectors.base import sanitize_error_message
+    from social_stats.storage.state_store import StateStore
+
+    raw = (
+        "Client error '401 Unauthorized' for url "
+        "'https://www.googleapis.com/youtube/v3/channels?part=id&key=AIzaSecret12345' "
+        "with Authorization: Bearer secret_jwt_token_999 and access_token=meta_sec_888"
+    )
+    cleaned = sanitize_error_message(raw)
+    assert "https://" not in cleaned
+    assert "AIzaSecret12345" not in cleaned
+    assert "secret_jwt_token_999" not in cleaned
+    assert "meta_sec_888" not in cleaned
+    assert "[REDACTED_URL]" in cleaned
+    assert "Bearer [REDACTED]" in cleaned
+    assert "access_token=[REDACTED]" in cleaned
+
+    store = StateStore(snapshot_repo.db)
+    state, transition, _ = await store.record_account_failure(
+        Platform.KEYCOUNTER,
+        "raupulus",
+        raw,
+    )
+    assert state.error_message == cleaned
+    assert transition is not None
+    assert transition.error_message == cleaned
+

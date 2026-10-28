@@ -63,6 +63,9 @@ async def test_instagram_level_a_graph_api_and_fallback_to_level_b() -> None:
     results = await collector.collect_batch(accounts)
 
     assert graph_route.call_count == 1
+    graph_req = graph_route.calls[0].request
+    assert "access_token" not in graph_req.url.params
+    assert graph_req.headers.get("Authorization") == "Bearer system_user_token_forever"
     m = results["raupulus"]
     assert m.followers_total == 2890
     assert m.posts_total == 145

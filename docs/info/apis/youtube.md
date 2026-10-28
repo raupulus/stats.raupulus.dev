@@ -6,10 +6,10 @@ Integración en el proyecto con Google YouTube Data API v3 para recolección mul
 
 ## 1. Endpoints Utilizados
 1. **Resolución opcional de `@handle` a `channel_id` (`UC...`):**
-   - `GET https://www.googleapis.com/youtube/v3/channels?part=id&forHandle={handle}&key={YOUTUBE_API_KEY}`
+   - `GET https://www.googleapis.com/youtube/v3/channels?part=id&forHandle={handle}` (cabecera `X-Goog-Api-Key: {YOUTUBE_API_KEY}`)
    - Se ejecuta una única vez por cada canal configurado solo con `handle` y se cachea en memoria (`_handle_to_channel_id`).
 2. **Consulta Batch Multicanal (hasta 50 canales por llamada):**
-   - `GET https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=UCxxx1,UCxxx2&key={YOUTUBE_API_KEY}`
+   - `GET https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=UCxxx1,UCxxx2` (cabecera `X-Goog-Api-Key: {YOUTUBE_API_KEY}`)
 
 ---
 

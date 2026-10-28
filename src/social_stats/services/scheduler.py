@@ -10,7 +10,7 @@ import time
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 
-from social_stats.collectors.base import BaseCollector
+from social_stats.collectors.base import BaseCollector, sanitize_error_message
 from social_stats.config.profiles import AccountConfig, ProfilesRegistry
 from social_stats.config.settings import Settings
 from social_stats.models.api import CollectorStatusData, MetricUpdateData
@@ -117,7 +117,7 @@ class CollectorScheduler:
             batch_results = await collector.collect_batch(accounts)
         except Exception as exc:
             latency_ms = int((time.monotonic() - start_monotonic) * 1000)
-            error_msg = f"{type(exc).__name__}: {exc}"
+            error_msg = sanitize_error_message(f"{type(exc).__name__}: {exc}")
             logger.warning(
                 "collector_batch_failed platform=%s accounts=%d latency_ms=%d error=%s",
                 platform,
@@ -155,8 +155,10 @@ class CollectorScheduler:
                 continue
 
             if key not in batch_results:
-                err_msg = collector.last_errors.get(
-                    key, f"Account '{key}' not returned by {platform} collector"
+                err_msg = sanitize_error_message(
+                    collector.last_errors.get(
+                        key, f"Account '{key}' not returned by {platform} collector"
+                    )
                 )
                 logger.warning(
                     "collector_account_failed platform=%s account=%s latency_ms=%d error=%s",

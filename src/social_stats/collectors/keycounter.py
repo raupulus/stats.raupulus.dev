@@ -6,7 +6,11 @@ from typing import Any
 
 import httpx
 
-from social_stats.collectors.base import DEFAULT_HTTP_TIMEOUT, BaseCollector
+from social_stats.collectors.base import (
+    DEFAULT_HTTP_TIMEOUT,
+    BaseCollector,
+    sanitize_error_message,
+)
 from social_stats.config.profiles import AccountConfig
 from social_stats.config.settings import Settings
 from social_stats.models.enums import Platform
@@ -79,7 +83,12 @@ class KeycounterCollector(BaseCollector):
         try:
             resp = await client.get(url, headers=headers)
         except httpx.HTTPError as exc:
-            return None, f"Keycounter HTTP transport error: {type(exc).__name__}: {exc}"
+            return (
+                None,
+                sanitize_error_message(
+                    f"Keycounter HTTP transport error: {type(exc).__name__}: {exc}"
+                ),
+            )
 
         payload: dict[str, Any] | None = None
         try:
@@ -95,14 +104,24 @@ class KeycounterCollector(BaseCollector):
                 if payload and payload.get("message")
                 else f"HTTP {resp.status_code}"
             )
-            return None, f"Keycounter API error (HTTP {resp.status_code}): {api_msg}"
+            return (
+                None,
+                sanitize_error_message(
+                    f"Keycounter API error (HTTP {resp.status_code}): {api_msg}"
+                ),
+            )
 
         if payload is None:
             return None, "Keycounter API returned non-JSON or invalid root payload"
 
         if payload.get("success") is False:
             api_msg = str(payload.get("message") or "Unknown API error")
-            return None, f"Keycounter API reported success=false: {api_msg}"
+            return (
+                None,
+                sanitize_error_message(
+                    f"Keycounter API reported success=false: {api_msg}"
+                ),
+            )
 
         data = payload.get("data")
         if not isinstance(data, dict):

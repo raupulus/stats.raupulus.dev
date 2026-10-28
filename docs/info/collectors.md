@@ -7,17 +7,17 @@ Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección as�
 ## 1. Qué hace y qué NO hace
 
 ### 1.1. Qué hace
-- Define el contrato abstracto `BaseCollector` (`collect_batch(accounts) -> dict[str, AccountMetrics]`).
+- Define el contrato abstracto `BaseCollector` (`collect_batch(accounts) -> dict[str, AccountMetrics]`) y el filtro de seguridad `sanitize_error_message()` que redacta automáticamente cualquier URL (`https?://...`), query string, token `Bearer` o credencial en mensajes de error antes de registrarlos en memoria, logs o base de datos.
 - Provee utilidades para registrar errores por cuenta (`record_account_error`) y cuentas deshabilitadas (`record_account_disabled`) sin abortar la recolección del resto de cuentas del lote.
-- Implementa los colectores de Nivel 1 (100% abiertos/API Key o Bearer Token permanente):
-  - `YouTubeCollector` (`youtube.py`): consulta batch multicanal (hasta 50 canales por llamada) y resolución cacheada de `@handle` a `UC...`.
+- Implementa los colectores de Nivel 1 (100% abiertos/API Key o Bearer Token permanente en cabeceras HTTP, nunca en URL):
+  - `YouTubeCollector` (`youtube.py`): consulta batch multicanal (hasta 50 canales por llamada) y resolución cacheada de `@handle` a `UC...`, enviando la clave en la cabecera `X-Goog-Api-Key`.
   - `BlueskyCollector` (`bluesky.py`): consulta batch de perfiles (`getProfiles`) y último post original (`getAuthorFeed` descartando reposts).
   - `MastodonCollector` (`mastodon.py`): consulta pública multi-instancia (`accounts/lookup` + `statuses`) con aislamiento de errores por instancia.
   - `CryptoCollector` (`crypto.py`): consulta batch de cotizaciones spot y estadísticas 24h en dólares (`USDT`) y euros (`EUR`) mediante Binance Public Market API (`/api/v3/ticker/24hr`) sin tokens.
   - `KeycounterCollector` (`keycounter.py`): consulta de pulsaciones de teclas y clics de ratón (totales históricos, hoy y última hora) contra `GET https://api.raupulus.dev/api/v2/keycounter/stats` con autenticación `Authorization: Bearer <TOKEN>`.
 - Implementa los colectores de Nivel 2 (arquitectura dual con fallback):
   - `TwitterCollector` (`twitter.py`): Nivel A Syndication API (`followbutton/info.json` + `timeline-profile`) y Nivel B GraphQL con cookies Read-Only opcionales.
-  - `InstagramCollector` (`instagram.py`): Nivel A Meta Graph API con System User Token permanente y Nivel B fallback `web_profile_info` con `curl_cffi`.
+  - `InstagramCollector` (`instagram.py`): Nivel A Meta Graph API con System User Token permanente en cabecera `Authorization: Bearer <TOKEN>` y Nivel B fallback `web_profile_info` con `curl_cffi`.
   - `TikTokCollector` (`tiktok.py`): extracción SSR desde `<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__">` con `curl_cffi` y soporte opcional para TikTok Display API v2 con rotación automática de `refresh_token` en SQLite.
 - Implementa el colector de Nivel 3 (aislado y opcional):
   - `LinkedInCollector` (`linkedin.py`): modos `organization` (API oficial) y `personal` (Voyager API con cookie `li_at`), reportando `status: "disabled"` si no se configuran credenciales.

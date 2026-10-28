@@ -35,7 +35,7 @@ Capa de persistencia histórica en SQLite (`WAL`), motor matemático de cálculo
 1. **Arranque:** `Database.connect()` inicializa el esquema en modo WAL y `StateStore.initialize_from_config_and_db()` hidrata la memoria con `account_latest_state`.
 2. **Enriquecimiento de Snapshot:** Antes de insertar la muestra actual en $t_{\text{now}}$, `SnapshotRepository.calculate_deltas()` busca la muestra en $[t_{\text{now}} - W - \text{tol}, t_{\text{now}} - W]$ (o la más antigua en $(t_{\text{now}} - W, t_{\text{now}})$ durante el *warm-up*) e inserta el nuevo snapshot.
 3. **Actualización en Memoria:** `StateStore.update_account_success()` ejecuta `DiffEngine.compute_diff()`, actualiza el estado a `healthy` y persiste en `account_latest_state`.
-4. **Fallo Resiliente:** `StateStore.record_account_failure()` conserva las métricas previas si existen (`status = stale`) o marca `error` si nunca hubo datos previos.
+4. **Fallo Resiliente:** `StateStore.record_account_failure()` sanitiza el mensaje de error mediante `sanitize_error_message()` (eliminando URLs, parámetros y posibles credenciales) y conserva las métricas previas si existen (`status = stale`) o marca `error` si nunca hubo datos previos.
 
 ---
 

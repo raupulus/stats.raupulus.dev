@@ -77,7 +77,9 @@ class InstagramCollector(BaseCollector):
             url,
             params={
                 "fields": fields,
-                "access_token": access_token,
+            },
+            headers={
+                "Authorization": f"Bearer {access_token}",
             },
         )
         if resp.status_code != 200:

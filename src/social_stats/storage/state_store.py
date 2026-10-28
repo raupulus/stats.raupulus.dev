@@ -316,6 +316,9 @@ class StateStore:
         Mark an account failed while preserving any valid cached metrics as STALE.
         If no prior metrics exist, status is set to ERROR.
         """
+        from social_stats.collectors.base import sanitize_error_message
+
+        safe_error = sanitize_error_message(error_message)
         ts = now if now is not None else datetime.now(UTC)
         p = Platform(str(platform).lower())
         key = (p, account_key)
@@ -334,7 +337,7 @@ class StateStore:
                     update={
                         "status": target_status,
                         "last_attempt_at": ts,
-                        "error_message": error_message,
+                        "error_message": safe_error,
                     }
                 )
             else:
@@ -346,7 +349,7 @@ class StateStore:
                     status=target_status,
                     last_updated_at=None,
                     last_attempt_at=ts,
-                    error_message=error_message,
+                    error_message=safe_error,
                 )
 
             self._states[key] = new_state
@@ -359,7 +362,7 @@ class StateStore:
                     previous_status=prev_status,
                     current_status=target_status,
                     last_updated_at=new_state.last_updated_at,
-                    error_message=error_message,
+                    error_message=safe_error,
                 )
 
             if self.db is not None:
@@ -377,6 +380,9 @@ class StateStore:
         reason: str | None = None,
     ) -> AccountState:
         """Mark an account as DISABLED (e.g., when disabled in config or missing optional creds)."""
+        from social_stats.collectors.base import sanitize_error_message
+
+        safe_reason = sanitize_error_message(reason) if reason is not None else None
         p = Platform(str(platform).lower())
         key = (p, account_key)
         async with self._lock:
@@ -389,7 +395,7 @@ class StateStore:
                 status=CollectorStatus.DISABLED,
                 last_updated_at=prev.last_updated_at if prev else None,
                 last_attempt_at=prev.last_attempt_at if prev else None,
-                error_message=reason,
+                error_message=safe_reason,
                 metrics=prev.metrics if prev else AccountMetrics(),
             )
             self._states[key] = state
