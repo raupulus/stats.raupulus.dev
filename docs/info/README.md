@@ -45,6 +45,9 @@ Bienvenido a la documentación técnica **viva** del proyecto. Este directorio c
 | YouTube | [`apis/youtube.md`](./apis/youtube.md) | Google Data API v3 (Batch multicanal con API Key permanente). |
 | Bluesky | [`apis/bluesky.md`](./apis/bluesky.md) | AT Protocol público (`getProfiles` + `getAuthorFeed`). |
 | Mastodon | [`apis/mastodon.md`](./apis/mastodon.md) | Instance REST API v1 pública multi-instancia. |
+| Twitter / X | [`apis/twitter.md`](./apis/twitter.md) | Syndication API pública (Nivel A) + GraphQL Read-Only Cookie (Nivel B). |
+| Instagram | [`apis/instagram.md`](./apis/instagram.md) | Meta Graph API System User Token (Nivel A) + Web Profile API (Nivel B). |
+| TikTok | [`apis/tiktok.md`](./apis/tiktok.md) | Hidratación SSR `__UNIVERSAL_DATA_FOR_REHYDRATION__` + Display API v2 auto-refresh. |
 
 ---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

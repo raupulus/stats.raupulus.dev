@@ -17,7 +17,10 @@ from social_stats import __version__
 from social_stats.api.router import api_v1_router, ws_router
 from social_stats.collectors.base import BaseCollector
 from social_stats.collectors.bluesky import BlueskyCollector
+from social_stats.collectors.instagram import InstagramCollector
 from social_stats.collectors.mastodon import MastodonCollector
+from social_stats.collectors.tiktok import TikTokCollector
+from social_stats.collectors.twitter import TwitterCollector
 from social_stats.collectors.youtube import YouTubeCollector
 from social_stats.config.profiles import ProfilesRegistry, load_profiles_config
 from social_stats.config.settings import Settings, get_settings
@@ -47,7 +50,6 @@ def build_default_collectors(
     db: Database | None = None,
 ) -> dict[Platform, BaseCollector]:
     """Instantiate all registered platform collectors."""
-    _ = db
     collectors: dict[Platform, BaseCollector] = {
         Platform.YOUTUBE: YouTubeCollector(
             api_key=settings.youtube_api_key,
@@ -55,6 +57,22 @@ def build_default_collectors(
         ),
         Platform.BLUESKY: BlueskyCollector(snapshot_repo=snapshot_repo),
         Platform.MASTODON: MastodonCollector(snapshot_repo=snapshot_repo),
+        Platform.TWITTER: TwitterCollector(
+            auth_token_cookie=settings.twitter_auth_token_cookie,
+            ct0_cookie=settings.twitter_ct0_cookie,
+            snapshot_repo=snapshot_repo,
+        ),
+        Platform.INSTAGRAM: InstagramCollector(
+            settings=settings,
+            snapshot_repo=snapshot_repo,
+        ),
+        Platform.TIKTOK: TikTokCollector(
+            client_key=settings.tiktok_client_key,
+            client_secret=settings.tiktok_client_secret,
+            db=db,
+            snapshot_repo=snapshot_repo,
+            use_curl_cffi=True,
+        ),
     }
     return collectors
 
