@@ -53,6 +53,6 @@ USER appuser
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import os, urllib.request; port = os.getenv('APP_PORT', '8000'); urllib.request.urlopen(f'http://127.0.0.1:{port}/api/v1/health')" || exit 1
+    CMD python -c "import os, urllib.request; port = os.getenv('APP_PORT', '8000'); urllib.request.urlopen(f'http://127.0.0.1:{port}/healthz')" || exit 1
 
-CMD ["sh", "-c", "exec uvicorn social_stats.main:app --host ${APP_HOST:-0.0.0.0} --port ${APP_PORT:-8000} --ws-ping-interval 20 --ws-ping-timeout 20"]
+CMD ["sh", "-c", "exec uvicorn social_stats.main:app --host ${APP_HOST:-0.0.0.0} --port ${APP_PORT:-8000} --ws-ping-interval 20 --ws-ping-timeout 20 --ws-max-size 1024"]

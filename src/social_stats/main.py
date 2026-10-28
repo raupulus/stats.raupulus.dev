@@ -12,9 +12,10 @@ import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from social_stats import __version__
-from social_stats.api.router import api_v1_router, ws_router
+from social_stats.api.router import api_v1_router, local_health_router, ws_router
 from social_stats.collectors.base import BaseCollector
 from social_stats.collectors.bluesky import BlueskyCollector
 from social_stats.collectors.crypto import CryptoCollector
@@ -36,6 +37,18 @@ from social_stats.storage.snapshot_repo import SnapshotRepository
 from social_stats.storage.state_store import StateStore
 
 ALLOWED_READONLY_METHODS: frozenset[str] = frozenset({"GET", "HEAD", "OPTIONS"})
+PUBLIC_CSP_POLICY = (
+    "default-src 'self'; "
+    "connect-src 'self' ws: wss:; "
+    "style-src 'self' https://fonts.googleapis.com; "
+    "font-src 'self' https://fonts.gstatic.com data:; "
+    "img-src 'self' data: https:; "
+    "script-src 'self'; "
+    "object-src 'none'; "
+    "base-uri 'self'; "
+    "frame-ancestors 'none'; "
+    "form-action 'none'"
+)
 
 
 def configure_logging(level: str = "INFO") -> None:
@@ -109,6 +122,14 @@ def _resolve_profiles_path(configured_path: Path) -> Path:
     return configured_path
 
 
+def _resolve_public_dir(configured_path: Path) -> Path | None:
+    """Resolve public/ static directory if present."""
+    for candidate in (configured_path, Path("public"), Path("/app/public")):
+        if candidate.is_dir() and (candidate / "index.html").is_file():
+            return candidate
+    return None
+
+
 def create_app(
     *,
     settings: Settings | None = None,
@@ -124,6 +145,7 @@ def create_app(
     """Create and configure the Read-Only FastAPI application."""
     cfg = settings if settings is not None else get_settings()
     configure_logging(cfg.log_level)
+    is_production = cfg.app_env.strip().lower() == "production"
 
     @asynccontextmanager
     async def lifespan(app_instance: FastAPI) -> AsyncIterator[None]:
@@ -204,6 +226,9 @@ def create_app(
         version=__version__,
         description="Unidirectional Read-Only server for social media metrics monitoring",
         lifespan=lifespan,
+        docs_url=None if is_production else "/docs",
+        redoc_url=None if is_production else "/redoc",
+        openapi_url=None if is_production else "/openapi.json",
     )
 
     fastapi_app.add_middleware(
@@ -211,16 +236,16 @@ def create_app(
         allow_origins=cfg.cors_origins_list,
         allow_credentials=False,
         allow_methods=["GET", "HEAD", "OPTIONS"],
-        allow_headers=["*"],
+        allow_headers=["Authorization", "Content-Type", "Accept"],
     )
 
     @fastapi_app.middleware("http")
-    async def enforce_readonly_http_methods(
+    async def enforce_readonly_and_security_headers(
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
         if request.method.upper() not in ALLOWED_READONLY_METHODS:
-            return JSONResponse(
+            response: Response = JSONResponse(
                 status_code=405,
                 headers={"Allow": "GET, HEAD, OPTIONS"},
                 content={
@@ -231,10 +256,36 @@ def create_app(
                     ),
                 },
             )
-        return await call_next(request)
+        else:
+            response = await call_next(request)
 
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault(
+            "Referrer-Policy", "strict-origin-when-cross-origin"
+        )
+        response.headers.setdefault(
+            "Permissions-Policy",
+            "geolocation=(), microphone=(), camera=(), payment=(), usb=()",
+        )
+        response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        if not request.url.path.startswith(("/docs", "/redoc")):
+            response.headers.setdefault(
+                "Content-Security-Policy", PUBLIC_CSP_POLICY
+            )
+        return response
+
+    fastapi_app.include_router(local_health_router)
     fastapi_app.include_router(api_v1_router)
     fastapi_app.include_router(ws_router)
+
+    public_dir = _resolve_public_dir(cfg.public_dir_path)
+    if public_dir is not None:
+        fastapi_app.mount(
+            "/",
+            StaticFiles(directory=str(public_dir), html=True),
+            name="public",
+        )
 
     return fastapi_app
 
@@ -251,4 +302,5 @@ def run() -> None:
         port=settings.app_port,
         ws_ping_interval=20.0,
         ws_ping_timeout=20.0,
+        ws_max_size=1024,
     )

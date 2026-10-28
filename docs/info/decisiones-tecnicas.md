@@ -59,4 +59,23 @@ Registro de decisiones técnicas deliberadas del proyecto. Este documento previe
 - **Consecuencia:** `ProfileAggregator` utiliza `_sum_nullable_ints` para ignorar valores `None` al sumar vistas de un perfil y solo reporta un entero en `views_total` / `views_last_24h` / `views_last_1h` si al menos una cuenta de la plataforma o perfil expone vistas no nulas.
 
 ---
+
+## DT-008: Arquitectura de Seguridad de 3 Canales (`/ws/public`, `/ws/stats` Privado y `/api/v1/*` Privado)
+- **Fecha:** 2026-10-28
+- **Decisión:** Separar el consumo en tres canales con políticas de seguridad y exposición diferenciadas:
+  1. **WebSocket Público (`/ws/public`):** Accesible sin token para la web pública (`stats.raupulus.dev`), protegido con verificación de `Origin` (`WS_PUBLIC_ALLOWED_ORIGINS`), límite de conexiones por IP (`WS_PUBLIC_MAX_PER_IP`) y global (`WS_PUBLIC_MAX_CONNECTIONS`), `--ws-max-size 1024` y cierre inmediato (`1008`) al primer mensaje enviado por el cliente. Solo expone perfiles/cuentas con `public: true`, redes sociales, cripto y en `keycounter` **exclusivamente los totales históricos acumulados** (`pulsations_total` y `clicks_total`), ocultando `pulsations_today`, `pulsations_last_1h`, `clicks_today` y `clicks_last_1h` para no revelar horarios de actividad en tiempo real.
+  2. **WebSocket Privado (`/ws/stats` y `/ws/profiles/{id}`):** Protegido con `API_BEARER_TOKEN`, entrega el 100% de las métricas y eventos sin recortes.
+  3. **API REST Privada (`/api/v1/*`):** Protegida con `Authorization: Bearer <API_BEARER_TOKEN>` y ocultación de `/docs`, `/redoc` y `/openapi.json` en producción.
+- **Motivo:** Permitir publicar un dashboard público en tiempo real seguro en `stats.raupulus.dev` sin exponer patrones de presencia horaria de teclado/ratón ni abrir la API REST o métricas internas sin autenticación.
+- **Consecuencia:** `ProfileAggregator` y `WSManager` filtran y redactan dinámicamente los snapshots y `metric_update` según el canal de cada suscriptor.
+
+---
+
+## DT-009: Cero Credenciales en URLs y Healthcheck Exclusivo de Loopback (`/healthz`)
+- **Fecha:** 2026-10-28
+- **Decisión:** Prohibir el envío de claves de API o tokens OAuth en parámetros de URL (`?key=`, `?access_token=`), enviándolos únicamente mediante cabeceras HTTP (`X-Goog-Api-Key` en YouTube, `Authorization: Bearer` en Instagram y Keycounter) y aplicando `sanitize_error_message` antes de persistir o registrar cualquier excepción. Además, separar el healthcheck de Docker en `GET /healthz` restringido a loopback (`127.0.0.1` / `::1`) sin cabeceras de proxy inverso.
+- **Motivo:** Evitar que una excepción de red de `httpx` o `curl_cffi` filtre tokens secretos en logs, `StateStore` o SQLite, y permitir que Docker verifique la salud del contenedor sin exponer `/api/v1/health` públicamente.
+- **Consecuencia:** `Dockerfile` utiliza `http://127.0.0.1:${APP_PORT}/healthz` y cualquier intento de acceder a `/healthz` a través de un proxy inverso externo recibe `403 Forbidden`.
+
+---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

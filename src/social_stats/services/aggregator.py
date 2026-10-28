@@ -24,6 +24,43 @@ from social_stats.models.enums import CollectorStatus, Platform
 from social_stats.models.metrics import AccountState, PlatformSummary, ProfileStats
 from social_stats.storage.state_store import StateStore
 
+KEYCOUNTER_PRIVATE_ONLY_FIELDS: frozenset[str] = frozenset(
+    {
+        "pulsations_today",
+        "pulsations_last_1h",
+        "clicks_today",
+        "clicks_last_1h",
+    }
+)
+
+
+def sanitize_account_state_for_public(state: AccountState) -> AccountState:
+    """
+    Redact private operational metadata and non-public metrics for /ws/public:
+    - Never expose error_message or last_attempt_at.
+    - For KEYCOUNTER, only expose lifetime totals (pulsations_total, clicks_total),
+      setting 1h and 24h/today fields to None.
+    """
+    metrics = state.metrics
+    if state.platform == Platform.KEYCOUNTER:
+        metrics = metrics.model_copy(
+            update={
+                "pulsations_today": None,
+                "pulsations_last_1h": None,
+                "clicks_today": None,
+                "clicks_last_1h": None,
+                "window_1h_complete": False,
+                "window_24h_complete": False,
+            }
+        )
+    return state.model_copy(
+        update={
+            "error_message": None,
+            "last_attempt_at": None,
+            "metrics": metrics,
+        }
+    )
+
 
 def compute_platform_status(accounts: list[AccountState]) -> CollectorStatus:
     """
@@ -89,11 +126,25 @@ class ProfileAggregator:
         self,
         platform: Platform,
         account_configs: list[AccountConfig],
+        *,
+        public_only: bool = False,
     ) -> PlatformSummary:
         """Build aggregated PlatformSummary for a list of AccountConfig in a profile."""
+        filtered_configs = (
+            [cfg for cfg in account_configs if cfg.enabled and cfg.public]
+            if public_only
+            else account_configs
+        )
         account_states = [
-            self._resolve_account_state(platform, cfg) for cfg in account_configs
+            self._resolve_account_state(platform, cfg) for cfg in filtered_configs
         ]
+        if public_only:
+            account_states = [
+                sanitize_account_state_for_public(st)
+                for st in account_states
+                if st.status != CollectorStatus.DISABLED
+            ]
+
         active_states = [
             st for st in account_states if st.status != CollectorStatus.DISABLED
         ]
@@ -162,11 +213,14 @@ class ProfileAggregator:
         *,
         platform_filter: Platform | None = None,
         include_disabled_platforms: bool = False,
+        public_only: bool = False,
         now: datetime | None = None,
     ) -> ProfileStats | None:
         """Build ProfileStats for a single profile_id, or return None if profile does not exist."""
         pconfig: ProfileConfig | None = self.registry.get_profile(profile_id)
         if pconfig is None:
+            return None
+        if public_only and (not pconfig.public or not pconfig.enable):
             return None
 
         ts = now if now is not None else datetime.now(UTC)
@@ -178,12 +232,29 @@ class ProfileAggregator:
             if platform_filter is not None and platform != platform_filter:
                 continue
 
-            enabled_configs = [c for c in acc_configs if c.enabled]
-            if not enabled_configs and not include_disabled_platforms:
+            if public_only:
+                public_enabled = [
+                    c for c in acc_configs if c.enabled and c.public
+                ]
+                if not public_enabled:
+                    continue
+                configs_to_use = public_enabled
+            else:
+                enabled_configs = [c for c in acc_configs if c.enabled]
+                if not enabled_configs and not include_disabled_platforms:
+                    continue
+                configs_to_use = (
+                    acc_configs if include_disabled_platforms else enabled_configs
+                )
+
+            summary = self.build_platform_summary(
+                platform,
+                configs_to_use,
+                public_only=public_only,
+            )
+            if public_only and not summary.accounts:
                 continue
 
-            configs_to_use = acc_configs if include_disabled_platforms else enabled_configs
-            summary = self.build_platform_summary(platform, configs_to_use)
             platforms_map[platform] = summary
 
             for acc_state in summary.accounts:
@@ -206,6 +277,7 @@ class ProfileAggregator:
         profile_filter: str | None = None,
         platform_filter: Platform | None = None,
         include_disabled_platforms: bool = False,
+        public_only: bool = False,
         now: datetime | None = None,
     ) -> GlobalStatsResponse:
         """Build GlobalStatsResponse across all profiles (or filtered subset)."""
@@ -222,6 +294,7 @@ class ProfileAggregator:
                 pid,
                 platform_filter=platform_filter,
                 include_disabled_platforms=include_disabled_platforms,
+                public_only=public_only,
                 now=ts,
             )
             if pstats is not None:
@@ -229,16 +302,27 @@ class ProfileAggregator:
 
         return GlobalStatsResponse(generated_at=ts, profiles=profiles_out)
 
-    def get_profiles_catalog(self, *, now: datetime | None = None) -> ProfilesCatalogResponse:
+    def get_profiles_catalog(
+        self,
+        *,
+        public_only: bool = False,
+        now: datetime | None = None,
+    ) -> ProfilesCatalogResponse:
         """Build ProfilesCatalogResponse for GET /api/v1/profiles."""
         ts = now if now is not None else datetime.now(UTC)
         items: list[ProfileCatalogItem] = []
 
         for pid, pconfig in self.registry.profiles.items():
+            if public_only and (not pconfig.public or not pconfig.enable):
+                continue
             active_platforms: list[Platform] = []
             total_enabled_accounts = 0
             for platform_str, acc_list in pconfig.accounts.items():
-                enabled_in_platform = [a for a in acc_list if a.enabled]
+                enabled_in_platform = [
+                    a
+                    for a in acc_list
+                    if a.enabled and (not public_only or a.public)
+                ]
                 if enabled_in_platform:
                     active_platforms.append(Platform(platform_str))
                     total_enabled_accounts += len(enabled_in_platform)
@@ -254,6 +338,21 @@ class ProfileAggregator:
             )
 
         return ProfilesCatalogResponse(generated_at=ts, profiles=items)
+
+    def is_account_public(
+        self,
+        profile_id: str,
+        platform: Platform,
+        account_key: str,
+    ) -> bool:
+        """Return True if the profile and the specific account within it are enabled and public."""
+        pconfig = self.registry.get_profile(profile_id)
+        if pconfig is None or not pconfig.enable or not pconfig.public:
+            return False
+        for acc in pconfig.accounts.get(str(platform), []):
+            if acc.account_key == account_key and acc.enabled and acc.public:
+                return True
+        return False
 
     def get_profiles_referencing_account(
         self, platform: Platform, account_key: str

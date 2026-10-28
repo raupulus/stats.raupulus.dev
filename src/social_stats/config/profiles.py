@@ -67,6 +67,7 @@ class AccountConfig(BaseModel):
     credentials_ref: str = "MAIN"
     account_type: Literal["personal", "organization"] = "personal"
     enabled: bool = True
+    public: bool = True
     interval_minutes: float | None = Field(default=None, gt=0)
     platform: str = ""
     account_key: str = ""
@@ -156,6 +157,7 @@ class ProfileConfig(BaseModel):
     name: str = Field(..., min_length=1)
     description: str | None = None
     enabled: bool = True
+    public: bool = True
     interval_minutes: float | None = Field(default=None, gt=0)
     accounts: dict[str, list[AccountConfig]] = Field(default_factory=dict)
 
@@ -197,6 +199,7 @@ class ProfileConfig(BaseModel):
                     )
                 seen_keys.add(key)
                 effective_enabled = acc.enabled and self.enabled
+                effective_public = acc.public and self.public
                 effective_interval = (
                     acc.interval_minutes
                     if acc.interval_minutes is not None
@@ -207,6 +210,7 @@ class ProfileConfig(BaseModel):
                         "platform": platform,
                         "account_key": key,
                         "enabled": effective_enabled,
+                        "public": effective_public,
                         "interval_minutes": effective_interval,
                     }
                 )
@@ -245,11 +249,14 @@ class ProfilesRegistry(BaseModel):
         return self.profiles.get(profile_id)
 
     def get_unique_accounts_by_platform(
-        self, *, only_enabled: bool = True
+        self,
+        *,
+        only_enabled: bool = True,
+        only_public: bool = False,
     ) -> dict[str, list[AccountConfig]]:
         """
         Deduplicate accounts across all profiles by (platform, account_key).
-        When the same account is present in multiple profiles, merges enabled status
+        When the same account is present in multiple profiles, merges enabled/public status
         and keeps the shortest configured interval_minutes.
         """
         result: dict[str, dict[str, AccountConfig]] = {}
@@ -258,12 +265,15 @@ class ProfilesRegistry(BaseModel):
                 for acc in accounts:
                     if only_enabled and not acc.enabled:
                         continue
+                    if only_public and not acc.public:
+                        continue
                     platform_bucket = result.setdefault(platform, {})
                     if acc.account_key not in platform_bucket:
                         platform_bucket[acc.account_key] = acc
                     else:
                         existing = platform_bucket[acc.account_key]
                         merged_enabled = existing.enabled or acc.enabled
+                        merged_public = existing.public or acc.public
                         if existing.interval_minutes is not None and acc.interval_minutes is not None:
                             merged_interval: float | None = min(
                                 existing.interval_minutes, acc.interval_minutes
@@ -277,6 +287,7 @@ class ProfilesRegistry(BaseModel):
                         platform_bucket[acc.account_key] = existing.model_copy(
                             update={
                                 "enabled": merged_enabled,
+                                "public": merged_public,
                                 "interval_minutes": merged_interval,
                             }
                         )

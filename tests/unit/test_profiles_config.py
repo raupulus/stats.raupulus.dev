@@ -276,12 +276,17 @@ def test_settings_defaults_and_credentials_resolution(monkeypatch: pytest.Monkey
     settings = Settings(
         _env_file=None,
         cors_allowed_origins="http://localhost:3000, http://10.8.0.5:8080",
+        ws_public_allowed_origins="https://stats.raupulus.dev, http://localhost:8000",
         ig_main_user_id="main_id",
         ig_main_access_token="main_tok",
         keycounter_api_token="main_kc_token",
     )
 
     assert settings.cors_origins_list == ["http://localhost:3000", "http://10.8.0.5:8080"]
+    assert settings.ws_public_origins_list == [
+        "https://stats.raupulus.dev",
+        "http://localhost:8000",
+    ]
     assert settings.get_poll_interval("youtube") == 300
     assert settings.get_poll_interval("keycounter") == 60
     assert settings.get_poll_interval("unknown_platform") == 300
@@ -293,3 +298,47 @@ def test_settings_defaults_and_credentials_resolution(monkeypatch: pytest.Monkey
     assert settings.get_instagram_credentials("nonexistent") == ("", "")
     assert settings.get_keycounter_token("MAIN") == "main_kc_token"
     assert settings.get_keycounter_token("WORK") == "work_kc_token"
+
+
+def test_public_flag_propagation_and_deduplication() -> None:
+    """Verify profile/account 'public' flag defaults to True and propagates when profile is private."""
+    registry = ProfilesRegistry.model_validate(
+        {
+            "version": "1.0",
+            "profiles": {
+                "public_prof": {
+                    "name": "Public Profile",
+                    "public": True,
+                    "accounts": {
+                        "bluesky": [
+                            {"handle": "pub.bsky.social"},
+                            {"handle": "priv.bsky.social", "public": False},
+                        ]
+                    },
+                },
+                "private_prof": {
+                    "name": "Private Profile",
+                    "public": False,
+                    "accounts": {
+                        "bluesky": [
+                            {"handle": "secret.bsky.social", "public": True},
+                        ]
+                    },
+                },
+            },
+        }
+    )
+
+    pub_prof = registry.get_profile("public_prof")
+    assert pub_prof is not None
+    assert pub_prof.public is True
+    assert pub_prof.accounts["bluesky"][0].public is True
+    assert pub_prof.accounts["bluesky"][1].public is False
+
+    priv_prof = registry.get_profile("private_prof")
+    assert priv_prof is not None
+    assert priv_prof.public is False
+    assert priv_prof.accounts["bluesky"][0].public is False
+
+    unique_public = registry.get_unique_accounts_by_platform(only_public=True)
+    assert [a.account_key for a in unique_public["bluesky"]] == ["pub.bsky.social"]

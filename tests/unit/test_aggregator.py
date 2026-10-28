@@ -519,3 +519,117 @@ def test_diff_engine_when_previous_latest_post_is_none() -> None:
     assert diff.changes["latest_post.views"].delta == 50
 
 
+async def test_aggregator_public_only_filtering_and_keycounter_redaction(
+    memory_db: Database,
+) -> None:
+    """
+    Verify that ProfileAggregator with public_only=True:
+    - Excludes profiles with public=False and accounts with public=False.
+    - Strips error_message and last_attempt_at from AccountState.
+    - For KEYCOUNTER, exposes only pulsations_total and clicks_total (setting 1h and today to None).
+    """
+    registry = ProfilesRegistry.model_validate(
+        {
+            "profiles": {
+                "pub": {
+                    "name": "Public Profile",
+                    "public": True,
+                    "accounts": {
+                        "bluesky": [
+                            {"handle": "visible.bsky.social", "public": True},
+                            {"handle": "hidden.bsky.social", "public": False},
+                        ],
+                        "keycounter": [
+                            {"handle": "raupulus", "public": True},
+                        ],
+                    },
+                },
+                "priv": {
+                    "name": "Private Profile",
+                    "public": False,
+                    "accounts": {
+                        "bluesky": [
+                            {"handle": "secret.bsky.social", "public": True},
+                        ]
+                    },
+                },
+            }
+        }
+    )
+
+    store = StateStore(memory_db)
+    await store.initialize_from_config_and_db(registry)
+    now = datetime(2026, 10, 28, 14, 0, 0, tzinfo=UTC)
+
+    await store.update_account_success(
+        Platform.BLUESKY,
+        "visible.bsky.social",
+        AccountMetrics(followers_total=500, posts_total=20),
+        now=now,
+    )
+    await store.record_account_failure(
+        Platform.BLUESKY,
+        "visible.bsky.social",
+        "HTTP 502 Bad Gateway",
+        now=now,
+    )
+    await store.update_account_success(
+        Platform.BLUESKY,
+        "hidden.bsky.social",
+        AccountMetrics(followers_total=9000, posts_total=100),
+        now=now,
+    )
+    await store.update_account_success(
+        Platform.KEYCOUNTER,
+        "raupulus",
+        AccountMetrics(
+            pulsations_total=12_845_620,
+            pulsations_today=15_420,
+            pulsations_last_1h=1_850,
+            clicks_total=450_120,
+            clicks_today=1_200,
+            clicks_last_1h=150,
+            window_1h_complete=True,
+            window_24h_complete=True,
+        ),
+        now=now,
+    )
+
+    agg = ProfileAggregator(registry, store)
+
+    # Private view includes everything
+    g_private = agg.get_global_stats(public_only=False, now=now)
+    assert "pub" in g_private.profiles
+    assert "priv" in g_private.profiles
+    assert len(g_private.profiles["pub"].platforms[Platform.BLUESKY].accounts) == 2
+    assert (
+        g_private.profiles["pub"].platforms[Platform.KEYCOUNTER].pulsations_today
+        == 15_420
+    )
+
+    # Public view filters private profiles/accounts and redacts keycounter 1h/today + errors
+    g_public = agg.get_global_stats(public_only=True, now=now)
+    assert list(g_public.profiles.keys()) == ["pub"]
+    bsky_pub = g_public.profiles["pub"].platforms[Platform.BLUESKY]
+    assert len(bsky_pub.accounts) == 1
+    assert bsky_pub.accounts[0].account_key == "visible.bsky.social"
+    assert bsky_pub.accounts[0].error_message is None
+    assert bsky_pub.accounts[0].last_attempt_at is None
+    assert bsky_pub.followers_total == 500
+
+    kc_pub = g_public.profiles["pub"].platforms[Platform.KEYCOUNTER]
+    assert kc_pub.pulsations_total == 12_845_620
+    assert kc_pub.clicks_total == 450_120
+    assert kc_pub.pulsations_today is None
+    assert kc_pub.pulsations_last_1h is None
+    assert kc_pub.clicks_today is None
+    assert kc_pub.clicks_last_1h is None
+    kc_acc = kc_pub.accounts[0]
+    assert kc_acc.metrics.pulsations_total == 12_845_620
+    assert kc_acc.metrics.clicks_total == 450_120
+    assert kc_acc.metrics.pulsations_today is None
+    assert kc_acc.metrics.pulsations_last_1h is None
+    assert kc_acc.metrics.clicks_today is None
+    assert kc_acc.metrics.clicks_last_1h is None
+
+

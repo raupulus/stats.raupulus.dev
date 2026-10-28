@@ -12,23 +12,26 @@ Guía operativa para desplegar el contenedor en un servidor privado accesible po
    cp config/profiles.example.json config/profiles.json
    mkdir -p data
    ```
-2. Editar `config/profiles.json` definiendo tus perfiles (ej. `raupulus`, `proyecto_secundario`), indicando `"enable": true` (o `false`) para activar/desactivar perfiles o cuentas individuales, y `"interval_minutes"` para ajustar el tiempo de consulta en minutos de cada cuenta.
-3. En `.env`, configurar `BIND_IP` con la dirección IP privada de la interfaz VPN del servidor (ej. `100.x.y.z` en Tailscale o `10.8.0.1` en WireGuard) o `127.0.0.1` para acceso local, además de `KEYCOUNTER_API_TOKEN` y las claves necesarias.
+2. Editar `config/profiles.json` definiendo tus perfiles (ej. `raupulus`, `proyecto_secundario`), indicando `"enable": true` (o `false`) para activar/desactivar perfiles o cuentas individuales, `"public": true` (o `false`) para controlar qué perfiles/cuentas se muestran en la web pública (`/ws/public`), e `"interval_minutes"` para ajustar el tiempo de consulta en minutos de cada cuenta.
+3. En `.env`, configurar `BIND_IP` (`127.0.0.1` tras proxy inverso o IP privada de VPN), generar un token seguro para `API_BEARER_TOKEN` (requerido para `/api/v1/*` y `/ws/stats`), definir `WS_PUBLIC_ALLOWED_ORIGINS=https://stats.raupulus.dev` y añadir `KEYCOUNTER_API_TOKEN` y las claves necesarias.
 4. Levantar el servicio:
    ```bash
    docker compose up --build -d
    ```
-5. Verificar el estado de salud:
+5. Verificar el healthcheck local del contenedor o consultar la API privada con token:
    ```bash
-   curl http://127.0.0.1:8000/api/v1/health
+   curl http://127.0.0.1:8000/healthz
+   curl -H "Authorization: Bearer <API_BEARER_TOKEN>" http://127.0.0.1:8000/api/v1/health
    ```
 
 ---
 
-## 2. Seguridad del Contenedor
+## 2. Seguridad del Contenedor y Separación de Canales
 - **Usuario sin privilegios:** El proceso corre bajo `appuser` (`UID 10001`).
 - **Filesystem raíz de solo lectura (`read_only: true`):** Solo `/app/data` (volumen persistente SQLite WAL) y `/tmp` (`tmpfs`) permiten escritura.
 - **Consumo 100% Read-Only:** Cualquier método HTTP distinto de `GET`, `HEAD` u `OPTIONS` recibe `405 Method Not Allowed`.
+- **Healthcheck exclusivo de localhost (`GET /healthz`):** Solo responde a peticiones directas desde loopback (`127.0.0.1` / `::1`) sin cabeceras de proxy inverso; rechaza peticiones externas con `403 Forbidden`.
+- **Cero credenciales en URLs:** Las claves de YouTube (`X-Goog-Api-Key`), Instagram (`Authorization: Bearer`) y Keycounter (`Authorization: Bearer`) viajan exclusivamente por cabeceras HTTP y los errores se sanitizan antes de guardarse en memoria o SQLite.
 
 ---
 
@@ -57,22 +60,25 @@ Guía operativa para desplegar el contenedor en un servidor privado accesible po
 
 ---
 
-## 4. Consumo desde Clientes (REST y WebSockets)
+## 4. Consumo desde Clientes (3 Canales Diferenciados)
 
-### 4.1. Consultas REST (`GET`)
+### 4.1. Canal 1: WebSocket Público (`WS /ws/public` — Sin token, para `stats.raupulus.dev`)
+- URL: `wss://stats.raupulus.dev/ws/public` (admite `?profile=raupulus&platform=youtube`).
+- Protegido por validación de `Origin` (`WS_PUBLIC_ALLOWED_ORIGINS`), límite de conexiones por IP (`WS_PUBLIC_MAX_PER_IP`), límite global (`WS_PUBLIC_MAX_CONNECTIONS`) y cierre inmediato (`1008`) si el cliente envía cualquier mensaje.
+- Expone únicamente perfiles y cuentas con `"public": true`, todas las redes sociales públicas, criptomonedas (`BTC`, `ADA`) y en `keycounter` **solo los totales acumulados históricos** (`pulsations_total` y `clicks_total`).
+
+### 4.2. Canal 2: WebSocket Privado (`WS /ws/stats` y `WS /ws/profiles/{profile_id}` — Con `API_BEARER_TOKEN`)
+- Requiere autenticación mediante cabecera `Authorization: Bearer <API_BEARER_TOKEN>`, subprotocolo `Sec-WebSocket-Protocol: bearer, <API_BEARER_TOKEN>` o parámetro `?token=<API_BEARER_TOKEN>`.
+- Emite el 100% de los datos sin recortes (incluyendo ventanas de 1h y hoy de Keycounter y eventos `collector_status`).
+
+### 4.3. Canal 3: API REST Privada (`GET /api/v1/*` — Con `Authorization: Bearer <API_BEARER_TOKEN>`)
 - `GET /api/v1/health` — Estado de salud del servidor, SQLite y colectores.
 - `GET /api/v1/profiles` — Catálogo de perfiles configurados.
 - `GET /api/v1/crypto` — Precios spot y estadísticas 24h de criptomonedas (`BTC`, `ADA`, etc.) en USD y EUR.
-- `GET /api/v1/keycounter` — Estadísticas de pulsaciones de teclas y clics de ratón (totales, hoy y última hora).
+- `GET /api/v1/keycounter` — Estadísticas completas de pulsaciones de teclas y clics de ratón (totales, hoy y última hora).
 - `GET /api/v1/stats` — Estadísticas de todos los perfiles (`?profile=raupulus&platform=youtube`).
 - `GET /api/v1/profiles/{profile_id}/stats` — Estadísticas agregadas y por cuenta de un perfil.
 - `GET /api/v1/profiles/{profile_id}/history?window=24h` — Serie temporal histórica (`1h`, `24h`, `7d`, `30d`).
-
-### 4.2. Suscripciones WebSocket (Read-Only)
-- Canal Global (todos los perfiles): `ws://<host>:8000/ws/stats`
-- Canal Filtrado por Perfil: `ws://<host>:8000/ws/stats?profile=raupulus` o `ws://<host>:8000/ws/profiles/raupulus`
-- Filtro adicional por plataforma: `?platform=youtube`
-- Al conectar, el servidor emite inmediatamente un evento `snapshot` con el estado completo en caché, seguido de eventos `metric_update` cuando cambian las métricas, `collector_status` si varía la salud de un proveedor y `heartbeat` cada 30 segundos.
 
 ---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

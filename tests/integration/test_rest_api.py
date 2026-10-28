@@ -117,8 +117,9 @@ async def seeded_api_app(
         now=now,
     )
 
+    settings = Settings(_env_file=None, api_bearer_token="test-private-token-123")
     app = create_app(
-        settings=Settings(),
+        settings=settings,
         registry=sample_registry,
         db=memory_db,
         state_store=state_store,
@@ -127,6 +128,7 @@ async def seeded_api_app(
         enable_scheduler=False,
     )
     # Populate app.state directly so ASGI transport works with or without lifespan
+    app.state.settings = settings
     app.state.db = memory_db
     app.state.registry = sample_registry
     app.state.snapshot_repo = snapshot_repo
@@ -135,7 +137,11 @@ async def seeded_api_app(
     app.state.start_monotonic = 0.0
 
     transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+    async with httpx.AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+        headers={"Authorization": "Bearer test-private-token-123"},
+    ) as client:
         yield client
 
 
@@ -147,12 +153,107 @@ async def test_health_and_profiles_catalog(seeded_api_app: httpx.AsyncClient) ->
     assert health_data["status"] == "ok"
     assert health_data["database_ok"] is True
     assert "youtube" in health_data["collectors"]
+    assert health_resp.headers.get("X-Content-Type-Options") == "nosniff"
+    assert health_resp.headers.get("X-Frame-Options") == "DENY"
+    assert "default-src 'self'" in health_resp.headers.get(
+        "Content-Security-Policy", ""
+    )
 
     profiles_resp = await seeded_api_app.get("/api/v1/profiles")
     assert profiles_resp.status_code == 200
     profiles_data = profiles_resp.json()
     ids = [p["profile_id"] for p in profiles_data["profiles"]]
     assert ids == ["raupulus", "proyecto_secundario"]
+
+
+async def test_private_rest_api_requires_bearer_token_and_local_healthz_protection(
+    seeded_api_app: httpx.AsyncClient,
+    memory_db: Database,
+    sample_registry: ProfilesRegistry,
+    state_store: StateStore,
+    snapshot_repo: SnapshotRepository,
+    aggregator: ProfileAggregator,
+) -> None:
+    """
+    Verify:
+    - /api/v1/* endpoints reject missing or invalid Bearer tokens with 401.
+    - When api_bearer_token is empty, /api/v1/* fails closed with 401.
+    - /healthz responds 200 on local loopback without token, but returns 403 when
+      reverse-proxy headers (X-Forwarded-For, CF-Connecting-IP) or external Host are present.
+    - Production mode disables /docs, /redoc, and /openapi.json.
+    """
+    # 1. Missing or invalid Authorization header -> 401
+    for path in (
+        "/api/v1/health",
+        "/api/v1/profiles",
+        "/api/v1/stats",
+        "/api/v1/crypto",
+        "/api/v1/keycounter",
+    ):
+        no_auth = await seeded_api_app.get(path, headers={"Authorization": ""})
+        assert no_auth.status_code == 401
+
+        bad_auth = await seeded_api_app.get(
+            path, headers={"Authorization": "Bearer wrong-token"}
+        )
+        assert bad_auth.status_code == 401
+
+    # 2. Local /healthz works on loopback without Authorization
+    local_hz = await seeded_api_app.get("/healthz", headers={"Authorization": ""})
+    assert local_hz.status_code == 200
+    assert local_hz.json() == {"status": "ok", "database_ok": True}
+
+    # 3. /healthz rejects requests forwarded by reverse proxy or external Host with 403
+    proxied_xff = await seeded_api_app.get(
+        "/healthz",
+        headers={"Authorization": "", "X-Forwarded-For": "203.0.113.50"},
+    )
+    assert proxied_xff.status_code == 403
+
+    proxied_cf = await seeded_api_app.get(
+        "/healthz",
+        headers={"Authorization": "", "CF-Connecting-IP": "198.51.100.12"},
+    )
+    assert proxied_cf.status_code == 403
+
+    external_host = await seeded_api_app.get(
+        "/healthz",
+        headers={"Authorization": "", "Host": "stats.raupulus.dev"},
+    )
+    assert external_host.status_code == 403
+
+    # 4. Production mode hides /docs, /redoc, /openapi.json and empty token fails closed
+    prod_settings = Settings(_env_file=None, app_env="production", api_bearer_token="")
+    prod_app = create_app(
+        settings=prod_settings,
+        registry=sample_registry,
+        db=memory_db,
+        state_store=state_store,
+        snapshot_repo=snapshot_repo,
+        aggregator=aggregator,
+        enable_scheduler=False,
+    )
+    prod_app.state.settings = prod_settings
+    prod_app.state.db = memory_db
+    prod_app.state.registry = sample_registry
+    prod_app.state.snapshot_repo = snapshot_repo
+    prod_app.state.state_store = state_store
+    prod_app.state.aggregator = aggregator
+    prod_app.state.start_monotonic = 0.0
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=prod_app),
+        base_url="http://127.0.0.1:8000",
+    ) as prod_client:
+        for schema_url in ("/docs", "/redoc", "/openapi.json"):
+            r = await prod_client.get(schema_url)
+            assert r.status_code == 404
+
+        # Even if client sends a Bearer header, empty configured token fails closed
+        r_api = await prod_client.get(
+            "/api/v1/stats", headers={"Authorization": "Bearer any-token"}
+        )
+        assert r_api.status_code == 401
 
 
 async def test_global_stats_and_profile_filtering(

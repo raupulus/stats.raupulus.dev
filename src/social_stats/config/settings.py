@@ -27,7 +27,17 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     profiles_config_path: Path = Path("config/profiles.json")
     sqlite_db_path: Path = Path("data/stats.db")
-    cors_allowed_origins: str = "*"
+    public_dir_path: Path = Path("public")
+    cors_allowed_origins: str = "https://stats.raupulus.dev,https://raupulus.dev,http://localhost:8000,http://127.0.0.1:8000"
+
+    # Security & 3-Channel Access Control
+    api_bearer_token: str = ""
+    ws_public_allowed_origins: str = (
+        "https://stats.raupulus.dev,https://raupulus.dev,"
+        "http://localhost:8000,http://127.0.0.1:8000"
+    )
+    ws_public_max_per_ip: int = Field(default=5, ge=1, le=1000)
+    ws_public_max_connections: int = Field(default=200, ge=1, le=10000)
 
     # Poll Intervals (seconds)
     poll_interval_youtube: int = Field(default=300, ge=10)
@@ -60,9 +70,25 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> list[str]:
         """Parse comma-separated CORS origins into a list."""
         raw = self.cors_allowed_origins.strip()
-        if not raw or raw == "*":
+        if not raw:
+            return []
+        if raw == "*":
             return ["*"]
         return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+    @property
+    def ws_public_origins_list(self) -> list[str]:
+        """Parse comma-separated allowed Origins for /ws/public."""
+        raw = self.ws_public_allowed_origins.strip()
+        if not raw:
+            return []
+        if raw == "*":
+            return ["*"]
+        return [
+            origin.strip().rstrip("/").lower()
+            for origin in raw.split(",")
+            if origin.strip()
+        ]
 
     def get_poll_interval(self, platform: str) -> int:
         """Return the configured polling interval in seconds for a platform."""

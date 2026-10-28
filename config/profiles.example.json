@@ -5,6 +5,7 @@
       "name": "Perfil Personal (raupulus)",
       "description": "Redes sociales principales, canales de contenido, keycounter y cripto",
       "enable": true,
+      "public": true,
       "accounts": {
         "youtube": [
           {
