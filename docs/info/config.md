@@ -73,10 +73,10 @@ Sistema de configuración tipado del servidor: carga y validación de variables 
 | `SQLITE_DB_PATH` | `Path` | `data/stats.db` | Ruta al archivo SQLite de snapshots |
 | `PUBLIC_DIR_PATH` | `Path` | `public` | Ruta al directorio estático de la web pública |
 | `API_BEARER_TOKEN` | `str` | `""` | Token Bearer obligatorio para API REST privada (`/api/v1/*`) y WebSockets privados (`/ws/stats`, `/ws/profiles/{id}`) |
-| `CORS_ALLOWED_ORIGINS` | `str` | `"https://stats.raupulus.dev,http://localhost:8000"` | Orígenes CORS permitidos separados por coma |
-| `WS_PUBLIC_ALLOWED_ORIGINS` | `str` | `"https://stats.raupulus.dev,http://localhost:8000,http://127.0.0.1:8000"` | Cabeceras `Origin` permitidas en `/ws/public` |
+| `CORS_ALLOWED_ORIGINS` | `str` | `"https://stats.raupulus.dev,https://raupulus.dev,http://localhost:8000,http://127.0.0.1:8000"` | Orígenes CORS permitidos separados por coma |
+| `WS_PUBLIC_ALLOWED_ORIGINS` | `str` | `"https://stats.raupulus.dev,https://raupulus.dev,http://localhost:8000,http://127.0.0.1:8000"` | Cabeceras `Origin` permitidas en `/ws/public` |
 | `WS_PUBLIC_MAX_PER_IP` | `int` | `5` | Límite de conexiones simultáneas por IP en `/ws/public` |
-| `WS_PUBLIC_MAX_CONNECTIONS` | `int` | `150` | Límite global de conexiones simultáneas en `/ws/public` |
+| `WS_PUBLIC_MAX_CONNECTIONS` | `int` | `200` | Límite global de conexiones simultáneas en `/ws/public` |
 | `SNAPSHOT_RETENTION_DAYS` | `int` | `30` | Días de retención de snapshots históricos |
 | `KEYCOUNTER_API_URL` | `str` | `"https://api.raupulus.dev/api/v2/keycounter/stats"` | URL del endpoint de estadísticas de Keycounter |
 | `KEYCOUNTER_API_TOKEN` | `str` | `""` | Token Bearer de autenticación para Keycounter |

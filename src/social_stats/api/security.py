@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import secrets
 from typing import cast
 
@@ -114,19 +115,53 @@ def is_local_loopback_request(request: Request) -> bool:
     return True
 
 
+_TRUSTED_PROXY_NETWORKS = (
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("fe80::/10"),
+)
+
+
+def _is_trusted_proxy_peer(peer_host: str) -> bool:
+    """Return True if the immediate socket peer is loopback or an RFC1918/ULA private reverse proxy."""
+    clean = peer_host.strip().lower()
+    if not clean:
+        return False
+    if clean in LOOPBACK_HOSTS:
+        return True
+    try:
+        addr = ipaddress.ip_address(clean.strip("[]"))
+        return any(addr in net for net in _TRUSTED_PROXY_NETWORKS)
+    except ValueError:
+        return False
+
+
 def extract_client_ip(websocket: WebSocket) -> str:
-    """Extract client IP address from reverse proxy headers or socket peer."""
-    for header in ("cf-connecting-ip", "x-real-ip"):
-        val = websocket.headers.get(header, "").strip()
-        if val:
-            return val
-    xff = websocket.headers.get("x-forwarded-for", "").strip()
-    if xff:
-        first_ip = xff.split(",")[0].strip()
-        if first_ip:
-            return first_ip
-    if websocket.client and websocket.client.host:
-        return websocket.client.host
+    """
+    Extract client IP address from reverse proxy headers (only when connected via
+    a local/private reverse proxy) or directly from the socket peer.
+    """
+    peer_host = (
+        websocket.client.host.strip()
+        if (websocket.client and websocket.client.host)
+        else ""
+    )
+    if not peer_host or _is_trusted_proxy_peer(peer_host):
+        for header in ("cf-connecting-ip", "x-real-ip"):
+            val = websocket.headers.get(header, "").strip()
+            if val:
+                return val[:64]
+        xff = websocket.headers.get("x-forwarded-for", "").strip()
+        if xff:
+            first_ip = xff.split(",")[0].strip()
+            if first_ip:
+                return first_ip[:64]
+    if peer_host:
+        return peer_host[:64]
     return "unknown"
 
 

@@ -103,6 +103,7 @@
       "name": "Proyecto Secundario",
       "description": "Métricas de redes del proyecto secundario",
       "enable": true,
+      "public": true,
       "interval_minutes": 15,
       "accounts": {
         "youtube": [

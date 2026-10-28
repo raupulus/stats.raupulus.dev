@@ -54,7 +54,7 @@ Servicios de coordinación del núcleo: agregación multiperfil (`ProfileAggrega
 | `POLL_INTERVAL_<PLATFORM>` | `int` | `60`–`3600` | Intervalo base de recolección por plataforma |
 | `SNAPSHOT_RETENTION_DAYS` | `int` | `30` | Días conservados por la tarea diaria de pruning |
 | `WS_PUBLIC_MAX_PER_IP` | `int` | `5` | Límite de conexiones concurrentes por IP en `/ws/public` |
-| `WS_PUBLIC_MAX_CONNECTIONS` | `int` | `150` | Límite global de conexiones concurrentes en `/ws/public` |
+| `WS_PUBLIC_MAX_CONNECTIONS` | `int` | `200` | Límite global de conexiones concurrentes en `/ws/public` |
 
 ---
 

@@ -19,9 +19,11 @@ DEFAULT_USER_AGENT = (
 )
 
 _URL_PATTERN = re.compile(r"https?://[^\s\"'<>]+", re.IGNORECASE)
+_QUERY_STRING_PATTERN = re.compile(r"\?[A-Za-z0-9_.\-%]+=[^\s\"'<>]*")
 _BEARER_PATTERN = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._\-~+/]+=*")
 _SECRET_KV_PATTERN = re.compile(
-    r"(?i)\b(key|api_key|access_token|refresh_token|client_secret|token|li_at|auth_token|ct0)"
+    r"(?i)\b(key|api_key|client_key|access_token|refresh_token|client_secret|"
+    r"secret|password|token|li_at|auth_token|ct0|sig|signature)"
     r"(\s*[=:]\s*)([^\s&\"',;]+)"
 )
 MAX_SANITIZED_ERROR_LENGTH = 240
@@ -35,6 +37,7 @@ def sanitize_error_message(message: str | None, *, max_length: int = MAX_SANITIZ
     if not message:
         return ""
     cleaned = _URL_PATTERN.sub("[REDACTED_URL]", str(message))
+    cleaned = _QUERY_STRING_PATTERN.sub("?[REDACTED_QUERY]", cleaned)
     cleaned = _BEARER_PATTERN.sub("Bearer [REDACTED]", cleaned)
     cleaned = _SECRET_KV_PATTERN.sub(r"\1\2[REDACTED]", cleaned)
     cleaned = " ".join(cleaned.split())

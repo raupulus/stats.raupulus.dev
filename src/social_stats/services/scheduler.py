@@ -294,7 +294,10 @@ class CollectorScheduler:
                     deleted,
                 )
             except Exception as exc:
-                logger.error("sqlite_pruning_failed error=%s", exc)
+                logger.error(
+                    "sqlite_pruning_failed error=%s",
+                    sanitize_error_message(f"{type(exc).__name__}: {exc}"),
+                )
 
             try:
                 await asyncio.wait_for(

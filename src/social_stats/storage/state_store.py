@@ -205,11 +205,19 @@ class StateStore:
                             continue
 
                         if key in persisted:
+                            from social_stats.collectors.base import sanitize_error_message
+
                             record = persisted[key]
+                            safe_err = (
+                                sanitize_error_message(record.state.error_message)
+                                if record.state.error_message
+                                else None
+                            )
                             restored = record.state.model_copy(
                                 update={
                                     "handle": acc.handle or record.state.handle,
                                     "label": acc.label or record.state.label,
+                                    "error_message": safe_err,
                                 }
                             )
                             self._states[key] = restored

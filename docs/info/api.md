@@ -69,10 +69,10 @@ Capa de exposición Read-Only con arquitectura de seguridad diferenciada en 3 ca
 | `APP_HOST` | `str` | `"0.0.0.0"` | Host de escucha de Uvicorn |
 | `APP_PORT` | `int` | `8000` | Puerto de escucha de Uvicorn |
 | `API_BEARER_TOKEN` | `str` | `""` | Token Bearer requerido en `/api/v1/*`, `/ws/stats` y `/ws/profiles/{id}` |
-| `CORS_ALLOWED_ORIGINS` | `str` | `"https://stats.raupulus.dev,http://localhost:8000"` | Orígenes permitidos en `CORSMiddleware` |
-| `WS_PUBLIC_ALLOWED_ORIGINS` | `str` | `"https://stats.raupulus.dev,http://localhost:8000,http://127.0.0.1:8000"` | Cabeceras `Origin` permitidas en `/ws/public` |
+| `CORS_ALLOWED_ORIGINS` | `str` | `"https://stats.raupulus.dev,https://raupulus.dev,http://localhost:8000,http://127.0.0.1:8000"` | Orígenes permitidos en `CORSMiddleware` |
+| `WS_PUBLIC_ALLOWED_ORIGINS` | `str` | `"https://stats.raupulus.dev,https://raupulus.dev,http://localhost:8000,http://127.0.0.1:8000"` | Cabeceras `Origin` permitidas en `/ws/public` |
 | `WS_PUBLIC_MAX_PER_IP` | `int` | `5` | Máximo de conexiones simultáneas por IP en `/ws/public` |
-| `WS_PUBLIC_MAX_CONNECTIONS` | `int` | `150` | Máximo global de conexiones simultáneas en `/ws/public` |
+| `WS_PUBLIC_MAX_CONNECTIONS` | `int` | `200` | Máximo global de conexiones simultáneas en `/ws/public` |
 
 ---
 

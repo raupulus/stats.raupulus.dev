@@ -391,6 +391,24 @@ def test_public_websocket_origin_limits_keycounter_redaction_and_zero_messages()
                 ws_pub_excess_ip.receive_json()
             assert ip_limit_exc.value.code == 1008
 
+            # Connect 3rd public client from a different IP (203.0.113.55) -> reaches global limit (3),
+            # then 4th public client from another IP (203.0.113.99) exceeds ws_public_max_connections=3 -> 1008
+            with client.websocket_connect(
+                "/ws/public",
+                headers={**valid_origin, "X-Forwarded-For": "203.0.113.55"},
+            ) as ws_pub3:
+                snap_pub3 = ws_pub3.receive_json()
+                assert snap_pub3["event"] == "snapshot"
+                with (
+                    pytest.raises(WebSocketDisconnect) as global_limit_exc,
+                    client.websocket_connect(
+                        "/ws/public",
+                        headers={**valid_origin, "X-Forwarded-For": "203.0.113.99"},
+                    ) as ws_pub_excess_global,
+                ):
+                    ws_pub_excess_global.receive_json()
+                assert global_limit_exc.value.code == 1008
+
             # 4. Keycounter update with totals + 1h + today
             kc_collector = _StubKeycounterCollector(
                 AccountMetrics(
@@ -474,6 +492,32 @@ def test_public_websocket_origin_limits_keycounter_redaction_and_zero_messages()
             with pytest.raises(WebSocketDisconnect) as ro_exc:
                 ws_pub1.receive_json()
             assert ro_exc.value.code == 1008
+
+    # 7. Verify extract_client_ip ignores spoofed headers when socket peer is an untrusted public IP
+    from types import SimpleNamespace
+    from typing import cast
+
+    from fastapi import WebSocket as FastAPIWebSocket
+
+    from social_stats.api.security import extract_client_ip
+
+    direct_public_ws = cast(
+        FastAPIWebSocket,
+        SimpleNamespace(
+            client=SimpleNamespace(host="198.51.100.200"),
+            headers={"cf-connecting-ip": "1.2.3.4", "x-forwarded-for": "5.6.7.8"},
+        ),
+    )
+    assert extract_client_ip(direct_public_ws) == "198.51.100.200"
+
+    trusted_proxy_ws = cast(
+        FastAPIWebSocket,
+        SimpleNamespace(
+            client=SimpleNamespace(host="172.18.0.2"),
+            headers={"cf-connecting-ip": "198.51.100.200"},
+        ),
+    )
+    assert extract_client_ip(trusted_proxy_ws) == "198.51.100.200"
 
 
 async def test_ws_manager_send_timeout_disconnects_stalled_client_without_blocking(

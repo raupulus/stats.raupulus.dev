@@ -172,6 +172,16 @@ async def test_error_sanitization_redacts_urls_and_tokens(
     assert "Bearer [REDACTED]" in cleaned
     assert "access_token=[REDACTED]" in cleaned
 
+    rel_raw = (
+        "HTTP error on /v2/oauth/token/?client_key=tt_secret_123&code=abc "
+        "and client_key=tt_other_456"
+    )
+    rel_cleaned = sanitize_error_message(rel_raw)
+    assert "tt_secret_123" not in rel_cleaned
+    assert "tt_other_456" not in rel_cleaned
+    assert "?[REDACTED_QUERY]" in rel_cleaned
+    assert "client_key=[REDACTED]" in rel_cleaned
+
     store = StateStore(snapshot_repo.db)
     state, transition, _ = await store.record_account_failure(
         Platform.KEYCOUNTER,
@@ -181,4 +191,36 @@ async def test_error_sanitization_redacts_urls_and_tokens(
     assert state.error_message == cleaned
     assert transition is not None
     assert transition.error_message == cleaned
+
+    # Verify legacy unsanitized error_message in SQLite is sanitized on startup hydration
+    from social_stats.config.profiles import ProfilesRegistry
+    from social_stats.models.enums import CollectorStatus
+    from social_stats.models.metrics import AccountState
+
+    legacy_state = AccountState(
+        platform=Platform.KEYCOUNTER,
+        account_key="raupulus",
+        handle="raupulus",
+        status=CollectorStatus.ERROR,
+        error_message="Failed https://api.raupulus.dev/api/v2/keycounter/stats?token=raw_db_leak_777",
+    )
+    await snapshot_repo.db.upsert_latest_state(legacy_state, consecutive_failures=2)
+
+    fresh_store = StateStore(snapshot_repo.db)
+    reg = ProfilesRegistry.model_validate(
+        {
+            "profiles": {
+                "raupulus": {
+                    "name": "Perfil",
+                    "accounts": {"keycounter": [{"handle": "raupulus"}]},
+                }
+            }
+        }
+    )
+    await fresh_store.initialize_from_config_and_db(reg)
+    restored = fresh_store.get_account_state(Platform.KEYCOUNTER, "raupulus")
+    assert restored is not None
+    assert restored.error_message is not None
+    assert "raw_db_leak_777" not in restored.error_message
+    assert "[REDACTED_URL]" in restored.error_message
 
