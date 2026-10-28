@@ -6,10 +6,16 @@ from social_stats.collectors.base import (
     BaseCollector,
     CollectorError,
 )
+from social_stats.collectors.bluesky import BlueskyCollector
+from social_stats.collectors.mastodon import MastodonCollector
+from social_stats.collectors.youtube import YouTubeCollector
 
 __all__ = [
     "BaseCollector",
+    "BlueskyCollector",
     "CollectorError",
     "DEFAULT_HTTP_TIMEOUT",
     "DEFAULT_USER_AGENT",
+    "MastodonCollector",
+    "YouTubeCollector",
 ]

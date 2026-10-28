@@ -39,8 +39,11 @@ Bienvenido a la documentación técnica **viva** del proyecto. Este directorio c
 
 ## 4. Integraciones con APIs Externas (`docs/info/apis/`)
 
-> ⚠️ **Estado actual:** Ninguna API externa conectada en código todavía.  
-> Cuando se implemente cada colector de red social, se añadirá aquí su correspondiente documento `docs/info/apis/<api>.md` explicando cómo se integra dicha API en el proyecto.
+| Plataforma | Documento | Método de Integración |
+|---|---|---|
+| YouTube | [`apis/youtube.md`](./apis/youtube.md) | Google Data API v3 (Batch multicanal con API Key permanente). |
+| Bluesky | [`apis/bluesky.md`](./apis/bluesky.md) | AT Protocol público (`getProfiles` + `getAuthorFeed`). |
+| Mastodon | [`apis/mastodon.md`](./apis/mastodon.md) | Instance REST API v1 pública multi-instancia. |
 
 ---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28
