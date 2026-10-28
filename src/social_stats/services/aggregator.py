@@ -1,0 +1,267 @@
+"""Profile aggregator projecting unique account states into per-profile views."""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime
+
+from social_stats.config.profiles import AccountConfig, ProfileConfig, ProfilesRegistry
+from social_stats.models.api import (
+    CollectorHealthSummary,
+    GlobalStatsResponse,
+    ProfileCatalogItem,
+    ProfilesCatalogResponse,
+)
+from social_stats.models.enums import CollectorStatus, Platform
+from social_stats.models.metrics import AccountState, PlatformSummary, ProfileStats
+from social_stats.storage.state_store import StateStore
+
+
+def compute_platform_status(accounts: list[AccountState]) -> CollectorStatus:
+    """
+    Compute aggregated CollectorStatus according to deterministic precedence rules:
+    1. All accounts DISABLED (or empty) -> DISABLED
+    2. All active accounts HEALTHY -> HEALTHY
+    3. All active accounts ERROR -> ERROR
+    4. Any active account STALE or mixed ERROR/HEALTHY -> STALE
+    """
+    active = [acc for acc in accounts if acc.status != CollectorStatus.DISABLED]
+    if not active:
+        return CollectorStatus.DISABLED
+
+    statuses = {acc.status for acc in active}
+    if statuses == {CollectorStatus.HEALTHY}:
+        return CollectorStatus.HEALTHY
+    if statuses == {CollectorStatus.ERROR}:
+        return CollectorStatus.ERROR
+    return CollectorStatus.STALE
+
+
+def _sum_nullable_ints(values: list[int | None]) -> int | None:
+    """Sum non-None integer values, returning None if all values are None."""
+    present = [v for v in values if v is not None]
+    if not present:
+        return None
+    return sum(present)
+
+
+class ProfileAggregator:
+    """Aggregates account states from StateStore into ProfileStats and GlobalStatsResponse."""
+
+    def __init__(self, registry: ProfilesRegistry, state_store: StateStore) -> None:
+        self.registry = registry
+        self.state_store = state_store
+
+    def _resolve_account_state(
+        self, platform: Platform, acc_cfg: AccountConfig
+    ) -> AccountState:
+        """Fetch AccountState from StateStore or construct default state from config."""
+        stored = self.state_store.get_account_state(platform, acc_cfg.account_key)
+        if stored is not None:
+            return stored.model_copy(
+                update={
+                    "handle": acc_cfg.handle or stored.handle,
+                    "label": acc_cfg.label or stored.label,
+                    "status": (
+                        CollectorStatus.DISABLED
+                        if not acc_cfg.enabled
+                        else stored.status
+                    ),
+                }
+            )
+        return AccountState(
+            platform=platform,
+            account_key=acc_cfg.account_key,
+            handle=acc_cfg.handle,
+            label=acc_cfg.label,
+            status=CollectorStatus.DISABLED if not acc_cfg.enabled else CollectorStatus.HEALTHY,
+        )
+
+    def build_platform_summary(
+        self,
+        platform: Platform,
+        account_configs: list[AccountConfig],
+    ) -> PlatformSummary:
+        """Build aggregated PlatformSummary for a list of AccountConfig in a profile."""
+        account_states = [
+            self._resolve_account_state(platform, cfg) for cfg in account_configs
+        ]
+        active_states = [
+            st for st in account_states if st.status != CollectorStatus.DISABLED
+        ]
+        source_states = active_states if active_states else account_states
+
+        followers_total = sum(
+            st.metrics.followers_total or 0 for st in source_states
+        )
+        posts_total = sum(st.metrics.posts_total or 0 for st in source_states)
+
+        followers_last_24h = _sum_nullable_ints(
+            [st.metrics.followers_last_24h for st in source_states]
+        )
+        views_total = _sum_nullable_ints(
+            [st.metrics.views_total for st in source_states]
+        )
+        views_last_24h = _sum_nullable_ints(
+            [st.metrics.views_last_24h for st in source_states]
+        )
+        views_last_1h = _sum_nullable_ints(
+            [st.metrics.views_last_1h for st in source_states]
+        )
+
+        status = compute_platform_status(account_states)
+
+        return PlatformSummary(
+            platform=platform,
+            accounts_count=len(account_states),
+            status=status,
+            followers_total=followers_total,
+            followers_last_24h=followers_last_24h,
+            posts_total=posts_total,
+            views_total=views_total,
+            views_last_24h=views_last_24h,
+            views_last_1h=views_last_1h,
+            accounts=account_states,
+        )
+
+    def get_profile_stats(
+        self,
+        profile_id: str,
+        *,
+        platform_filter: Platform | None = None,
+        include_disabled_platforms: bool = False,
+        now: datetime | None = None,
+    ) -> ProfileStats | None:
+        """Build ProfileStats for a single profile_id, or return None if profile does not exist."""
+        pconfig: ProfileConfig | None = self.registry.get_profile(profile_id)
+        if pconfig is None:
+            return None
+
+        ts = now if now is not None else datetime.now(UTC)
+        platforms_map: dict[Platform, PlatformSummary] = {}
+        latest_update: datetime | None = None
+
+        for platform_str, acc_configs in pconfig.accounts.items():
+            platform = Platform(platform_str)
+            if platform_filter is not None and platform != platform_filter:
+                continue
+
+            enabled_configs = [c for c in acc_configs if c.enabled]
+            if not enabled_configs and not include_disabled_platforms:
+                continue
+
+            configs_to_use = acc_configs if include_disabled_platforms else enabled_configs
+            summary = self.build_platform_summary(platform, configs_to_use)
+            platforms_map[platform] = summary
+
+            for acc_state in summary.accounts:
+                if acc_state.last_updated_at is not None and (
+                    latest_update is None or acc_state.last_updated_at > latest_update
+                ):
+                    latest_update = acc_state.last_updated_at
+
+        return ProfileStats(
+            profile_id=pconfig.profile_id,
+            name=pconfig.name,
+            description=pconfig.description,
+            updated_at=latest_update if latest_update is not None else ts,
+            platforms=platforms_map,
+        )
+
+    def get_global_stats(
+        self,
+        *,
+        profile_filter: str | None = None,
+        platform_filter: Platform | None = None,
+        include_disabled_platforms: bool = False,
+        now: datetime | None = None,
+    ) -> GlobalStatsResponse:
+        """Build GlobalStatsResponse across all profiles (or filtered subset)."""
+        ts = now if now is not None else datetime.now(UTC)
+        profiles_out: dict[str, ProfileStats] = {}
+
+        target_ids = (
+            [profile_filter]
+            if profile_filter is not None
+            else list(self.registry.profiles.keys())
+        )
+        for pid in target_ids:
+            pstats = self.get_profile_stats(
+                pid,
+                platform_filter=platform_filter,
+                include_disabled_platforms=include_disabled_platforms,
+                now=ts,
+            )
+            if pstats is not None:
+                profiles_out[pid] = pstats
+
+        return GlobalStatsResponse(generated_at=ts, profiles=profiles_out)
+
+    def get_profiles_catalog(self, *, now: datetime | None = None) -> ProfilesCatalogResponse:
+        """Build ProfilesCatalogResponse for GET /api/v1/profiles."""
+        ts = now if now is not None else datetime.now(UTC)
+        items: list[ProfileCatalogItem] = []
+
+        for pid, pconfig in self.registry.profiles.items():
+            active_platforms: list[Platform] = []
+            total_enabled_accounts = 0
+            for platform_str, acc_list in pconfig.accounts.items():
+                enabled_in_platform = [a for a in acc_list if a.enabled]
+                if enabled_in_platform:
+                    active_platforms.append(Platform(platform_str))
+                    total_enabled_accounts += len(enabled_in_platform)
+
+            items.append(
+                ProfileCatalogItem(
+                    profile_id=pid,
+                    name=pconfig.name,
+                    description=pconfig.description,
+                    platforms=active_platforms,
+                    accounts_count=total_enabled_accounts,
+                )
+            )
+
+        return ProfilesCatalogResponse(generated_at=ts, profiles=items)
+
+    def get_profiles_referencing_account(
+        self, platform: Platform, account_key: str
+    ) -> list[tuple[str, AccountConfig]]:
+        """Return list of (profile_id, AccountConfig) that include an enabled account."""
+        matches: list[tuple[str, AccountConfig]] = []
+        for pid, pconfig in self.registry.profiles.items():
+            for acc in pconfig.accounts.get(str(platform), []):
+                if acc.enabled and acc.account_key == account_key:
+                    matches.append((pid, acc))
+        return matches
+
+    def get_collectors_health(self) -> dict[Platform, CollectorHealthSummary]:
+        """Build per-platform health summaries across all unique accounts."""
+        summaries: dict[Platform, CollectorHealthSummary] = {}
+        unique_all = self.registry.get_unique_accounts_by_platform(only_enabled=False)
+
+        for platform_str, acc_configs in unique_all.items():
+            platform = Platform(platform_str)
+            states = [self._resolve_account_state(platform, cfg) for cfg in acc_configs]
+            active_states = [s for s in states if s.status != CollectorStatus.DISABLED]
+
+            healthy_cnt = sum(1 for s in active_states if s.status == CollectorStatus.HEALTHY)
+            stale_cnt = sum(1 for s in active_states if s.status == CollectorStatus.STALE)
+            error_cnt = sum(1 for s in active_states if s.status == CollectorStatus.ERROR)
+
+            last_success: datetime | None = None
+            for s in active_states:
+                if s.last_updated_at is not None and (
+                    last_success is None or s.last_updated_at > last_success
+                ):
+                    last_success = s.last_updated_at
+
+            summaries[platform] = CollectorHealthSummary(
+                platform=platform,
+                status=compute_platform_status(states),
+                accounts_total=len(active_states),
+                accounts_healthy=healthy_cnt,
+                accounts_stale=stale_cnt,
+                accounts_error=error_cnt,
+                last_success_at=last_success,
+            )
+
+        return summaries
