@@ -34,11 +34,12 @@ Servicios de coordinación del núcleo: agregación multiperfil (`ProfileAggrega
 - `ProfileAggregator.get_profiles_catalog()`
 - `ProfileAggregator.get_collectors_health()`
 - `CollectorScheduler.start()`, `stop()`, `run_collector_once()`
+- `WSManager.connect()`, `disconnect()`, `send_snapshot()`, `broadcast_update()`, `broadcast_collector_status()`, `broadcast_heartbeat()`, `start_heartbeat()`, `stop_heartbeat()`
 
 ---
 
 ## 5. Dependencias en ambos sentidos
-- **Depende de:** `social_stats.config`, `social_stats.models`, `social_stats.storage`, `social_stats.collectors.base`.
+- **Depende de:** `fastapi` (WebSocket), `social_stats.config`, `social_stats.models`, `social_stats.storage`, `social_stats.collectors.base`.
 - **Consumido por:** `api`, `main`.
 
 ---
@@ -53,17 +54,19 @@ Servicios de coordinación del núcleo: agregación multiperfil (`ProfileAggrega
 
 ## 7. Trampas conocidas y consideraciones de diseño
 - Precedencia determinista de estado en `compute_platform_status`: todas `disabled` $\rightarrow$ `disabled`; todas las activas `healthy` $\rightarrow$ `healthy`; todas las activas `error` $\rightarrow$ `error`; cualquier mezcla o cuenta en `stale` $\rightarrow$ `stale`.
+- `WSManager` envía mensajes de forma concurrente con `asyncio.gather` y desconecta automáticamente sockets caídos sin bloquear a otros suscriptores.
 
 ---
 
 ## 8. Tests que lo cubren
 - [`tests/unit/test_aggregator.py`](../../tests/unit/test_aggregator.py)
-- Comando: `.venv/bin/pytest tests/unit/test_aggregator.py`
+- [`tests/integration/test_websockets.py`](../../tests/integration/test_websockets.py)
+- Comando: `.venv/bin/pytest tests/unit/test_aggregator.py tests/integration/test_websockets.py`
 
 ---
 
 ## 9. Pendiente real
-- En Fase 3 se incorpora `WSManager` (`src/social_stats/services/ws_manager.py`) a este paquete.
+- Ninguno.
 
 ---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

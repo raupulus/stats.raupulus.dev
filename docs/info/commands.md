@@ -12,6 +12,7 @@ Registro de comandos CLI, tareas de desarrollo y scripts de automatización veri
 | `.venv/bin/pytest --cov=social_stats` | Ejecutar tests midiendo cobertura de código. | Ninguna | Tabla de cobertura por módulo y código `0`. |
 | `.venv/bin/ruff check .` | Analizador estático y linter de código Python. | Ninguna | `All checks passed!` (código `0`). |
 | `.venv/bin/mypy src/` | Verificación estricta de tipado estático. | Ninguna | `Success: no issues found` (código `0`). |
+| `.venv/bin/social-stats` | Arrancar el servidor FastAPI + WebSockets en local con Uvicorn. | `.env` opcional | Servidor escuchando en `APP_HOST:APP_PORT`. |
 | `docker compose up --build -d` | Construir y levantar el contenedor Docker en segundo plano. | Archivo `.env` (basado en `.env.example`) | Contenedor `social-stats-server` en estado `healthy`. |
 
 ---

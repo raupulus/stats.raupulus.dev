@@ -1,0 +1,191 @@
+"""Integration tests for the Read-Only REST API v1 endpoints."""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime
+
+import httpx
+import pytest
+
+from social_stats.config.profiles import ProfilesRegistry
+from social_stats.config.settings import Settings
+from social_stats.main import create_app
+from social_stats.models.enums import Platform
+from social_stats.models.metrics import AccountMetrics
+from social_stats.services.aggregator import ProfileAggregator
+from social_stats.storage.database import Database
+from social_stats.storage.snapshot_repo import SnapshotRepository
+from social_stats.storage.state_store import StateStore
+
+
+@pytest.fixture
+async def seeded_api_app(
+    memory_db: Database,
+    snapshot_repo: SnapshotRepository,
+    sample_registry: ProfilesRegistry,
+    state_store: StateStore,
+    aggregator: ProfileAggregator,
+) -> httpx.AsyncClient:
+    """Provide an httpx.AsyncClient connected to a seeded FastAPI app."""
+    now = datetime(2026, 10, 28, 13, 30, 0, tzinfo=UTC)
+    now_ts = int(now.timestamp())
+
+    # Seed metrics for raupulus YouTube channels and proyecto_secundario YouTube channel
+    m1 = await snapshot_repo.enrich_and_record(
+        Platform.YOUTUBE,
+        "UC1111111111111111111111",
+        AccountMetrics(followers_total=15200, posts_total=280, views_total=2_100_000),
+        timestamp=now_ts,
+    )
+    await state_store.update_account_success(
+        Platform.YOUTUBE,
+        "UC1111111111111111111111",
+        m1,
+        now=now,
+    )
+
+    m2 = await snapshot_repo.enrich_and_record(
+        Platform.YOUTUBE,
+        "UC2222222222222222222222",
+        AccountMetrics(followers_total=3300, posts_total=60, views_total=350_120),
+        timestamp=now_ts,
+    )
+    await state_store.update_account_success(
+        Platform.YOUTUBE,
+        "UC2222222222222222222222",
+        m2,
+        now=now,
+    )
+
+    m_sec = await snapshot_repo.enrich_and_record(
+        Platform.YOUTUBE,
+        "UC4444444444444444444444",
+        AccountMetrics(followers_total=900, posts_total=15, views_total=12_000),
+        timestamp=now_ts,
+    )
+    await state_store.update_account_success(
+        Platform.YOUTUBE,
+        "UC4444444444444444444444",
+        m_sec,
+        now=now,
+    )
+
+    app = create_app(
+        settings=Settings(),
+        registry=sample_registry,
+        db=memory_db,
+        state_store=state_store,
+        snapshot_repo=snapshot_repo,
+        aggregator=aggregator,
+        enable_scheduler=False,
+    )
+    # Populate app.state directly so ASGI transport works with or without lifespan
+    app.state.db = memory_db
+    app.state.registry = sample_registry
+    app.state.snapshot_repo = snapshot_repo
+    app.state.state_store = state_store
+    app.state.aggregator = aggregator
+    app.state.start_monotonic = 0.0
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
+
+
+async def test_health_and_profiles_catalog(seeded_api_app: httpx.AsyncClient) -> None:
+    """Verify GET /api/v1/health and GET /api/v1/profiles."""
+    health_resp = await seeded_api_app.get("/api/v1/health")
+    assert health_resp.status_code == 200
+    health_data = health_resp.json()
+    assert health_data["status"] == "ok"
+    assert health_data["database_ok"] is True
+    assert "youtube" in health_data["collectors"]
+
+    profiles_resp = await seeded_api_app.get("/api/v1/profiles")
+    assert profiles_resp.status_code == 200
+    profiles_data = profiles_resp.json()
+    ids = [p["profile_id"] for p in profiles_data["profiles"]]
+    assert ids == ["raupulus", "proyecto_secundario"]
+
+
+async def test_global_stats_and_profile_filtering(
+    seeded_api_app: httpx.AsyncClient,
+) -> None:
+    """
+    Verify GET /api/v1/stats returns all profiles and GET /api/v1/profiles/raupulus/stats
+    returns exclusively raupulus's aggregated networks.
+    """
+    global_resp = await seeded_api_app.get("/api/v1/stats")
+    assert global_resp.status_code == 200
+    global_data = global_resp.json()
+    assert "raupulus" in global_data["profiles"]
+    assert "proyecto_secundario" in global_data["profiles"]
+
+    # Query param filter ?profile=raupulus&platform=youtube
+    filtered_resp = await seeded_api_app.get(
+        "/api/v1/stats", params={"profile": "raupulus", "platform": "youtube"}
+    )
+    assert filtered_resp.status_code == 200
+    filtered_data = filtered_resp.json()
+    assert list(filtered_data["profiles"].keys()) == ["raupulus"]
+    assert list(filtered_data["profiles"]["raupulus"]["platforms"].keys()) == ["youtube"]
+
+    # Profile-specific route
+    raupulus_resp = await seeded_api_app.get("/api/v1/profiles/raupulus/stats")
+    assert raupulus_resp.status_code == 200
+    raupulus_data = raupulus_resp.json()
+    assert raupulus_data["profile_id"] == "raupulus"
+    yt = raupulus_data["platforms"]["youtube"]
+    assert yt["followers_total"] == 15200 + 3300
+    assert yt["views_total"] == 2_100_000 + 350_120
+    assert len(yt["accounts"]) == 3
+
+
+async def test_history_and_404_error_responses(
+    seeded_api_app: httpx.AsyncClient,
+) -> None:
+    """Verify GET /api/v1/profiles/{id}/history and 404/400 error payloads."""
+    hist_resp = await seeded_api_app.get(
+        "/api/v1/profiles/raupulus/history",
+        params={
+            "platform": "youtube",
+            "account_key": "UC1111111111111111111111",
+            "window": "24h",
+        },
+    )
+    assert hist_resp.status_code == 200
+    hist_data = hist_resp.json()
+    assert hist_data["profile_id"] == "raupulus"
+    assert len(hist_data["series"]) == 1
+    assert len(hist_data["series"][0]["points"]) == 1
+    assert hist_data["series"][0]["points"][0]["followers_total"] == 15200
+
+    # Nonexistent profile -> 404
+    not_found = await seeded_api_app.get("/api/v1/profiles/inexistente/stats")
+    assert not_found.status_code == 404
+    assert not_found.json()["error"] == "profile_not_found"
+
+    # Nonexistent platform -> 404
+    bad_plat = await seeded_api_app.get(
+        "/api/v1/profiles/raupulus/stats", params={"platform": "myspace"}
+    )
+    assert bad_plat.status_code == 404
+    assert bad_plat.json()["error"] == "platform_not_found"
+
+    # Invalid window -> 400
+    bad_win = await seeded_api_app.get(
+        "/api/v1/profiles/raupulus/history", params={"window": "999y"}
+    )
+    assert bad_win.status_code == 400
+    assert bad_win.json()["error"] == "invalid_window"
+
+
+@pytest.mark.parametrize("method", ["POST", "PUT", "DELETE", "PATCH"])
+async def test_write_methods_return_405(
+    seeded_api_app: httpx.AsyncClient, method: str
+) -> None:
+    """Verify strict Read-Only enforcement: POST/PUT/DELETE/PATCH return 405 Method Not Allowed."""
+    resp = await seeded_api_app.request(method, "/api/v1/stats")
+    assert resp.status_code == 405
+    assert resp.json()["error"] == "method_not_allowed"
+    assert "GET" in resp.headers.get("Allow", "")

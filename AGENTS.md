@@ -128,8 +128,9 @@ Cualquier agente que trabaje en este repositorio debe aplicar este protocolo de 
   - [`docs/info/config.md`](docs/info/config.md) — Configuración de variables de entorno y perfiles declarativos (`profiles.yaml`)
   - [`docs/info/models.md`](docs/info/models.md) — Modelos de dominio y esquemas Pydantic REST/WebSocket
   - [`docs/info/storage.md`](docs/info/storage.md) — Motor SQLite WAL, cálculo de deltas ($\Delta_{1h}$, $\Delta_{24h}$), `StateStore` y `DiffEngine`
-  - [`docs/info/services.md`](docs/info/services.md) — `ProfileAggregator` y `CollectorScheduler`
+  - [`docs/info/services.md`](docs/info/services.md) — `ProfileAggregator`, `CollectorScheduler` y `WSManager`
   - [`docs/info/collectors.md`](docs/info/collectors.md) — Interfaz `BaseCollector` y colectores por plataforma
+  - [`docs/info/api.md`](docs/info/api.md) — Servidor FastAPI Read-Only, rutas REST v1 y WebSockets
 
 
 ### 5.4. Checklist Obligatorio antes de Cerrar Cualquier Tarea

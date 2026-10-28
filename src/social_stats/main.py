@@ -1,0 +1,214 @@
+"""FastAPI entrypoint, lifespan orchestration, and strict Read-Only middleware."""
+
+from __future__ import annotations
+
+import logging
+import time
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+import uvicorn
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from social_stats import __version__
+from social_stats.api.router import api_v1_router, ws_router
+from social_stats.collectors.base import BaseCollector
+from social_stats.collectors.bluesky import BlueskyCollector
+from social_stats.collectors.mastodon import MastodonCollector
+from social_stats.collectors.youtube import YouTubeCollector
+from social_stats.config.profiles import ProfilesRegistry, load_profiles_config
+from social_stats.config.settings import Settings, get_settings
+from social_stats.models.enums import Platform
+from social_stats.services.aggregator import ProfileAggregator
+from social_stats.services.scheduler import CollectorScheduler
+from social_stats.services.ws_manager import WSManager
+from social_stats.storage.database import Database
+from social_stats.storage.snapshot_repo import SnapshotRepository
+from social_stats.storage.state_store import StateStore
+
+ALLOWED_READONLY_METHODS: frozenset[str] = frozenset({"GET", "HEAD", "OPTIONS"})
+
+
+def configure_logging(level: str = "INFO") -> None:
+    """Configure structured UTC logging format."""
+    logging.basicConfig(
+        level=getattr(logging, level.upper(), logging.INFO),
+        format="%(asctime)sZ %(levelname)s [%(name)s] %(message)s",
+    )
+    logging.Formatter.converter = time.gmtime
+
+
+def build_default_collectors(
+    settings: Settings,
+    snapshot_repo: SnapshotRepository,
+    db: Database | None = None,
+) -> dict[Platform, BaseCollector]:
+    """Instantiate all registered platform collectors."""
+    _ = db
+    collectors: dict[Platform, BaseCollector] = {
+        Platform.YOUTUBE: YouTubeCollector(
+            api_key=settings.youtube_api_key,
+            snapshot_repo=snapshot_repo,
+        ),
+        Platform.BLUESKY: BlueskyCollector(snapshot_repo=snapshot_repo),
+        Platform.MASTODON: MastodonCollector(snapshot_repo=snapshot_repo),
+    }
+    return collectors
+
+
+def _resolve_profiles_path(configured_path: Path) -> Path:
+    """Resolve profiles.yaml path, falling back to config/profiles.example.yaml if absent."""
+    if configured_path.exists():
+        return configured_path
+    fallback = Path("config/profiles.example.yaml")
+    if fallback.exists():
+        return fallback
+    return configured_path
+
+
+def create_app(
+    *,
+    settings: Settings | None = None,
+    registry: ProfilesRegistry | None = None,
+    db: Database | None = None,
+    state_store: StateStore | None = None,
+    snapshot_repo: SnapshotRepository | None = None,
+    aggregator: ProfileAggregator | None = None,
+    ws_manager: WSManager | None = None,
+    scheduler: CollectorScheduler | None = None,
+    enable_scheduler: bool = True,
+) -> FastAPI:
+    """Create and configure the Read-Only FastAPI application."""
+    cfg = settings if settings is not None else get_settings()
+    configure_logging(cfg.log_level)
+
+    @asynccontextmanager
+    async def lifespan(app_instance: FastAPI) -> AsyncIterator[None]:
+        app_instance.state.start_monotonic = time.monotonic()
+
+        active_db = db if db is not None else Database(cfg.sqlite_db_path)
+        await active_db.connect()
+
+        active_registry = (
+            registry
+            if registry is not None
+            else load_profiles_config(_resolve_profiles_path(cfg.profiles_config_path))
+        )
+        active_snapshot_repo = (
+            snapshot_repo
+            if snapshot_repo is not None
+            else SnapshotRepository(active_db)
+        )
+        active_store = (
+            state_store if state_store is not None else StateStore(active_db)
+        )
+        await active_store.initialize_from_config_and_db(active_registry)
+
+        active_aggregator = (
+            aggregator
+            if aggregator is not None
+            else ProfileAggregator(active_registry, active_store)
+        )
+        active_ws = (
+            ws_manager
+            if ws_manager is not None
+            else WSManager(active_aggregator)
+        )
+        active_collectors = build_default_collectors(
+            cfg, active_snapshot_repo, active_db
+        )
+        active_scheduler = (
+            scheduler
+            if scheduler is not None
+            else CollectorScheduler(
+                settings=cfg,
+                registry=active_registry,
+                collectors=active_collectors,
+                snapshot_repo=active_snapshot_repo,
+                state_store=active_store,
+                aggregator=active_aggregator,
+                on_metric_update=active_ws.broadcast_update,
+                on_status_change=active_ws.broadcast_collector_status,
+            )
+        )
+
+        app_instance.state.settings = cfg
+        app_instance.state.db = active_db
+        app_instance.state.registry = active_registry
+        app_instance.state.snapshot_repo = active_snapshot_repo
+        app_instance.state.state_store = active_store
+        app_instance.state.aggregator = active_aggregator
+        app_instance.state.ws_manager = active_ws
+        app_instance.state.scheduler = active_scheduler
+
+        active_ws.start_heartbeat(
+            lambda: max(0, int(time.monotonic() - app_instance.state.start_monotonic))
+        )
+        if enable_scheduler:
+            active_scheduler.start()
+
+        try:
+            yield
+        finally:
+            if enable_scheduler:
+                await active_scheduler.stop()
+            await active_ws.stop_heartbeat()
+            if db is None:
+                await active_db.close()
+
+    fastapi_app = FastAPI(
+        title="Social Stats Read-Only API & WebSockets",
+        version=__version__,
+        description="Unidirectional Read-Only server for social media metrics monitoring",
+        lifespan=lifespan,
+    )
+
+    fastapi_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cfg.cors_origins_list,
+        allow_credentials=False,
+        allow_methods=["GET", "HEAD", "OPTIONS"],
+        allow_headers=["*"],
+    )
+
+    @fastapi_app.middleware("http")
+    async def enforce_readonly_http_methods(
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
+        if request.method.upper() not in ALLOWED_READONLY_METHODS:
+            return JSONResponse(
+                status_code=405,
+                headers={"Allow": "GET, HEAD, OPTIONS"},
+                content={
+                    "error": "method_not_allowed",
+                    "message": (
+                        f"El método HTTP '{request.method}' está deshabilitado. "
+                        "Esta API es estrictamente de solo lectura (Read-Only)."
+                    ),
+                },
+            )
+        return await call_next(request)
+
+    fastapi_app.include_router(api_v1_router)
+    fastapi_app.include_router(ws_router)
+
+    return fastapi_app
+
+
+app = create_app()
+
+
+def run() -> None:
+    """CLI entrypoint for launching uvicorn."""
+    settings = get_settings()
+    uvicorn.run(
+        "social_stats.main:app",
+        host=settings.app_host,
+        port=settings.app_port,
+        ws_ping_interval=20.0,
+        ws_ping_timeout=20.0,
+    )

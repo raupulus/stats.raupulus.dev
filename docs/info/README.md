@@ -31,8 +31,9 @@ Bienvenido a la documentación técnica **viva** del proyecto. Este directorio c
 | `config` | [`config.md`](./config.md) | Configuración de variables de entorno (`.env`) y cargador/validador declarativo de `config/profiles.yaml`. |
 | `models` | [`models.md`](./models.md) | Modelos Pydantic v2 de métricas, estados, perfiles, respuestas REST y eventos WebSocket. |
 | `storage` | [`storage.md`](./storage.md) | Base de datos SQLite WAL, motor de snapshots ($\Delta_{1h}$, $\Delta_{24h}$), `StateStore` en memoria y `DiffEngine`. |
-| `services` | [`services.md`](./services.md) | Agregador multiperfil (`ProfileAggregator`) y planificador asíncrono (`CollectorScheduler`). |
+| `services` | [`services.md`](./services.md) | Agregador multiperfil (`ProfileAggregator`), planificador (`CollectorScheduler`) y gestor WebSocket (`WSManager`). |
 | `collectors` | [`collectors.md`](./collectors.md) | Clase base `BaseCollector` y proveedores de recolección por red social. |
+| `api` / `main` | [`api.md`](./api.md) | Servidor FastAPI Read-Only, endpoints REST (`/api/v1/*`) y streaming WebSocket (`/ws/*`). |
 
 
 ---
