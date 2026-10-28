@@ -123,6 +123,7 @@ social-stats-api-websockets/
 │   ├── index.html
 │   ├── js/
 │   │   └── app.js
+│   ├── logo.svg
 │   └── robots.txt
 ├── src/
 │   └── social_stats/
