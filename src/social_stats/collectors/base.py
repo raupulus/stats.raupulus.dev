@@ -42,11 +42,15 @@ class BaseCollector(ABC):
         self._external_client = http_client
         self.last_errors: dict[str, str] = {}
         self.disabled_accounts: dict[str, str] = {}
+        self.enriched_accounts: set[str] = set()
+        self._cycle_now_ts: int | None = None
 
-    def reset_cycle_tracking(self) -> None:
-        """Clear per-account error and disabled tracking at the start of a batch cycle."""
+    def reset_cycle_tracking(self, *, now_ts: int | None = None) -> None:
+        """Clear per-account error/disabled/enriched tracking at the start of a batch cycle."""
         self.last_errors.clear()
         self.disabled_accounts.clear()
+        self.enriched_accounts.clear()
+        self._cycle_now_ts = now_ts
 
     def record_account_error(self, account_key: str, error_message: str) -> None:
         """Record an error for a specific account without aborting the rest of the batch."""
@@ -65,12 +69,15 @@ class BaseCollector(ABC):
         """If snapshot_repo is attached, calculate 1h/24h deltas and persist snapshot."""
         if self.snapshot_repo is None:
             return metrics
-        return await self.snapshot_repo.enrich_and_record(
+        effective_ts = now_ts if now_ts is not None else self._cycle_now_ts
+        enriched = await self.snapshot_repo.enrich_and_record(
             platform=self.platform,
             account_key=account_key,
             metrics=metrics,
-            timestamp=now_ts,
+            timestamp=effective_ts,
         )
+        self.enriched_accounts.add(account_key)
+        return enriched
 
     @abstractmethod
     async def collect_batch(

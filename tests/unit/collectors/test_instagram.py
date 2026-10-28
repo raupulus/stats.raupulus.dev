@@ -114,3 +114,61 @@ async def test_instagram_level_a_graph_api_and_fallback_to_level_b() -> None:
     assert m_fb.latest_post.views == 980
     assert m_fb.latest_post.likes == 88
     assert m_fb.latest_post.comments == 9
+
+
+async def test_instagram_level_b_uses_curl_cffi_when_enabled(monkeypatch) -> None:
+    """
+    Verify that when use_curl_cffi=True (production default in build_default_collectors)
+    and no external httpx client is injected, Level B uses curl_cffi AsyncSession
+    with impersonate='chrome124'.
+    """
+    captured_calls: list[dict[str, object]] = []
+
+    class _FakeResponse:
+        status_code = 200
+
+        def json(self) -> dict[str, object]:
+            return {
+                "data": {
+                    "user": {
+                        "edge_followed_by": {"count": 3100},
+                        "edge_owner_to_timeline_media": {
+                            "count": 150,
+                            "edges": [],
+                        },
+                    }
+                }
+            }
+
+    class _FakeAsyncSession:
+        def __init__(self, **kwargs: object) -> None:
+            captured_calls.append(dict(kwargs))
+
+        async def __aenter__(self) -> _FakeAsyncSession:
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+        async def get(self, url: str, **kwargs: object) -> _FakeResponse:
+            captured_calls.append({"url": url, **kwargs})
+            return _FakeResponse()
+
+    monkeypatch.setattr("social_stats.collectors.instagram.AsyncSession", _FakeAsyncSession)
+
+    accounts = [
+        AccountConfig(
+            handle="raupulus",
+            account_key="raupulus",
+            platform="instagram",
+        )
+    ]
+    collector = InstagramCollector(settings=Settings(), use_curl_cffi=True)
+    results = await collector.collect_batch(accounts)
+
+    assert len(captured_calls) == 2
+    assert captured_calls[0]["impersonate"] == "chrome124"
+    assert captured_calls[1]["url"] == IG_WEB_PROFILE_URL
+    assert results["raupulus"].followers_total == 3100
+    assert results["raupulus"].posts_total == 150
+

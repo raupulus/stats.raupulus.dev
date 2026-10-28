@@ -18,4 +18,10 @@ Colector de Nivel 3 aislado para LinkedIn con degradación a estado `disabled` p
 - Si una cuenta de LinkedIn no tiene configurada su credencial correspondiente en `.env`, `LinkedInCollector` la registra en `disabled_accounts` y `StateStore` reporta `status: "disabled"` sin disparar alertas de error.
 
 ---
+
+## 3. Estado de Verificación Empírica
+- Modos `organization`, `personal` y degradación a `status: "disabled"` verificados mediante mocks HTTP deterministas (`respx`) en `tests/unit/collectors/test_linkedin.py`.
+- Peticiones en vivo contra `api.linkedin.com/rest/` y `www.linkedin.com/voyager/api/`: `⚠️ sin verificar` con credenciales reales.
+
+---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

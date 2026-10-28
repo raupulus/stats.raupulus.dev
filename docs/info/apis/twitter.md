@@ -26,4 +26,10 @@ Estrategia de doble nivel desatendida para Twitter/X: Nivel A (Syndication API p
   - `retweet_count + quote_count` $\rightarrow$ `latest_post.shares`.
 
 ---
+
+## 3. Estado de Verificación Empírica
+- Parseo de Syndication (`followbutton/info.json`, `__NEXT_DATA__`, `tweet-result`), ordenación por `snowflake id` y fallback desde GraphQL verificados mediante mocks HTTP deterministas (`respx`) en `tests/unit/collectors/test_twitter.py`.
+- Disponibilidad en vivo de los endpoints no documentados de Syndication y `queryId` de GraphQL (`UserByScreenName` / `UserTweets`): `⚠️ sin verificar` frente a tráfico real de X/Twitter.
+
+---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

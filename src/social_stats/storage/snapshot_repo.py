@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -177,7 +178,7 @@ class SnapshotRepository:
         """Insert a point-in-time metric snapshot into metric_snapshots."""
         ts = timestamp if timestamp is not None else int(datetime.now(UTC).timestamp())
         latest = metrics.latest_post
-        await self.db.conn.execute(
+        await self.db.execute_write(
             """
             INSERT INTO metric_snapshots (
                 timestamp, platform, account_key,
@@ -200,7 +201,6 @@ class SnapshotRepository:
                 latest.shares if latest else None,
             ),
         )
-        await self.db.conn.commit()
 
     async def enrich_and_record(
         self,
@@ -273,11 +273,16 @@ class SnapshotRepository:
         """Delete snapshots older than retention_days and run PRAGMA optimize."""
         ts = now_ts if now_ts is not None else int(datetime.now(UTC).timestamp())
         cutoff_ts = ts - (retention_days * 86400)
-        cursor = await self.db.conn.execute(
-            "DELETE FROM metric_snapshots WHERE timestamp < ?;",
-            (cutoff_ts,),
-        )
-        deleted_count = cursor.rowcount if cursor.rowcount is not None else 0
-        await self.db.conn.execute("PRAGMA optimize;")
-        await self.db.conn.commit()
-        return deleted_count
+        async with self.db.write_lock:
+
+            async def _do_prune() -> int:
+                cursor = await self.db.conn.execute(
+                    "DELETE FROM metric_snapshots WHERE timestamp < ?;",
+                    (cutoff_ts,),
+                )
+                deleted = cursor.rowcount if cursor.rowcount is not None else 0
+                await self.db.conn.execute("PRAGMA optimize;")
+                await self.db.conn.commit()
+                return deleted
+
+            return await asyncio.shield(_do_prune())

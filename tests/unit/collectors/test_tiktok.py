@@ -137,3 +137,59 @@ async def test_tiktok_ssr_rehydration_and_display_api_token_rotation(
     assert stored is not None
     assert stored.access_token == "fresh_tok_2026"
     assert stored.refresh_token == "refresh_tok_new"
+
+
+async def test_tiktok_ssr_uses_curl_cffi_when_enabled(monkeypatch) -> None:
+    """
+    Verify that when use_curl_cffi=True (default), TikTokCollector._fetch_profile_html
+    invokes curl_cffi AsyncSession with impersonate='chrome124'.
+    """
+    captured_calls: list[dict[str, object]] = []
+    rehydration_data = {
+        "__DEFAULT_SCOPE__": {
+            "webapp.user-detail": {
+                "userInfo": {
+                    "user": {"id": "998877", "uniqueId": "raupulus"},
+                    "stats": {"followerCount": 7000, "videoCount": 95},
+                },
+                "itemList": [],
+            }
+        }
+    }
+    html = (
+        '<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" type="application/json">'
+        f"{json.dumps(rehydration_data)}</script>"
+    )
+
+    class _FakeResponse:
+        status_code = 200
+        text = html
+
+    class _FakeAsyncSession:
+        def __init__(self, **kwargs: object) -> None:
+            captured_calls.append(dict(kwargs))
+
+        async def __aenter__(self) -> _FakeAsyncSession:
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+        async def get(self, url: str, **kwargs: object) -> _FakeResponse:
+            captured_calls.append({"url": url, **kwargs})
+            return _FakeResponse()
+
+    monkeypatch.setattr("social_stats.collectors.tiktok.AsyncSession", _FakeAsyncSession)
+
+    accounts = [
+        AccountConfig(handle="raupulus", account_key="raupulus", platform="tiktok")
+    ]
+    collector = TikTokCollector(use_curl_cffi=True)
+    results = await collector.collect_batch(accounts)
+
+    assert len(captured_calls) == 2
+    assert captured_calls[0]["impersonate"] == "chrome124"
+    assert captured_calls[1]["url"] == "https://www.tiktok.com/@raupulus"
+    assert results["raupulus"].followers_total == 7000
+    assert results["raupulus"].posts_total == 95
+

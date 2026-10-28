@@ -26,4 +26,10 @@ Integración en el proyecto con Google YouTube Data API v3 para recolección mul
 - Coste de cuota: 1 unidad por petición batch de hasta 50 canales (~288 unidades/día con intervalo de 300s, < 3% del nivel gratuito de 10.000 unidades/día).
 
 ---
+
+## 4. Estado de Verificación Empírica
+- Contrato y parseo verificados mediante mocks HTTP deterministas (`respx`) en `tests/unit/collectors/test_youtube.py`.
+- Peticiones en vivo contra `googleapis.com` con `YOUTUBE_API_KEY` real: `⚠️ sin verificar` en este entorno de desarrollo local.
+
+---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

@@ -64,7 +64,9 @@ class MastodonCollector(BaseCollector):
             )
 
         acct_data: dict[str, Any] = lookup_resp.json()
-        internal_id = str(acct_data.get("id", ""))
+        internal_id = str(
+            acct_data.get("id") or self._account_id_cache.get(acc.account_key, "")
+        )
         if not internal_id:
             raise CollectorError(
                 f"Mastodon lookup on {instance} for '{handle}' did not return an account id"

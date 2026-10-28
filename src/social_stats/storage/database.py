@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import aiosqlite
 
@@ -82,6 +84,7 @@ class Database:
     def __init__(self, db_path: Path | str = ":memory:") -> None:
         self.db_path = str(db_path)
         self._conn: aiosqlite.Connection | None = None
+        self.write_lock = asyncio.Lock()
 
     @property
     def conn(self) -> aiosqlite.Connection:
@@ -105,9 +108,24 @@ class Database:
 
     async def close(self) -> None:
         """Close active SQLite connection."""
-        if self._conn is not None:
-            await self._conn.close()
-            self._conn = None
+        async with self.write_lock:
+            if self._conn is not None:
+                await self._conn.close()
+                self._conn = None
+
+    async def execute_write(
+        self, sql: str, parameters: tuple[Any, ...] = ()
+    ) -> int:
+        """Execute a write statement and commit atomically under write_lock and shield."""
+        async with self.write_lock:
+
+            async def _do_write() -> int:
+                cursor = await self.conn.execute(sql, parameters)
+                rowcount = cursor.rowcount if cursor.rowcount is not None else 0
+                await self.conn.commit()
+                return rowcount
+
+            return await asyncio.shield(_do_write())
 
     async def check_health(self) -> bool:
         """Execute lightweight SELECT 1 to verify SQLite responsiveness."""
@@ -142,7 +160,7 @@ class Database:
             "label": state.label,
             "metrics": payload,
         }
-        await self.conn.execute(
+        await self.execute_write(
             """
             INSERT INTO account_latest_state (
                 platform, account_key, updated_at, last_attempt_at,
@@ -167,7 +185,6 @@ class Database:
                 json.dumps(payload_meta),
             ),
         )
-        await self.conn.commit()
 
     async def load_all_latest_states(self) -> dict[tuple[Platform, str], PersistedAccountRecord]:
         """Load all persisted account states on container startup."""
@@ -260,7 +277,7 @@ class Database:
     ) -> None:
         """Save or update an auto-refreshing OAuth token in SQLite."""
         updated = now_ts if now_ts is not None else int(datetime.now(UTC).timestamp())
-        await self.conn.execute(
+        await self.execute_write(
             """
             INSERT INTO auth_tokens (
                 provider, credentials_ref, access_token, refresh_token, expires_at, updated_at
@@ -280,4 +297,3 @@ class Database:
                 updated,
             ),
         )
-        await self.conn.commit()

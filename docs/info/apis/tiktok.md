@@ -13,4 +13,10 @@ Extracción SSR desde hidratación `__UNIVERSAL_DATA_FOR_REHYDRATION__` con huel
    - Consulta `POST https://open.tiktokapis.com/v2/video/list/?fields=id,create_time,view_count,like_count,comment_count,share_count` (`max_count=1`).
 
 ---
+
+## 2. Estado de Verificación Empírica
+- Extracción de `__UNIVERSAL_DATA_FOR_REHYDRATION__`, transporte `curl_cffi` (`impersonate="chrome124"`) y rotación OAuth2 en SQLite (`auth_tokens`) verificados mediante tests unitarios en `tests/unit/collectors/test_tiktok.py`.
+- Extracción SSR en vivo frente a desafíos anti-bot de `www.tiktok.com` y flujo real contra `open.tiktokapis.com`: `⚠️ sin verificar` en este entorno de desarrollo local.
+
+---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

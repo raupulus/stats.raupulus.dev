@@ -52,11 +52,11 @@ Registro de decisiones técnicas deliberadas del proyecto. Este documento previe
 
 ---
 
-## DT-007: Batching Multicanal en YouTube Data API v3 y Declaración Explícita de Capacidades (`metrics_supported`)
+## DT-007: Batching Multicanal en YouTube Data API v3 y Campos Nulos para Vistas Globales No Soportadas
 - **Fecha:** 2026-10-28
-- **Decisión:** El colector de YouTube agrupa hasta 50 `channel_id` en una única llamada HTTP (`channels.list?id=id1,id2...`, 1 unidad de cuota total) independientemente de a qué perfil pertenezca cada canal. Además, cada cuenta declara explícitamente `metrics_supported` (`views: bool`, `followers: bool`) devolviendo `null` cuando una red social no ofrece contadores globales de visualizaciones de perfil (Bluesky, Mastodon, Twitter/X, Instagram, TikTok, LinkedIn).
+- **Decisión:** El colector de YouTube agrupa hasta 50 `channel_id` en una única llamada HTTP (`channels.list?id=id1,id2...`, 1 unidad de cuota total) independientemente de a qué perfil pertenezca cada canal. Además, los campos `views_total`, `views_last_24h` y `views_last_1h` en `AccountMetrics` y `PlatformSummary` son opcionales (`int | None = None`), devolviendo `null` cuando una red social no ofrece contadores globales de visualizaciones de perfil (Bluesky, Mastodon, Twitter/X, Instagram, TikTok, LinkedIn).
 - **Motivo:** Reducir en >90% el consumo de cuota diaria de Google Cloud (10.000 unidades/día) y evitar confundir «métrica no disponible en la plataforma» (`null`) con «0 visitas reales» (`0`).
-- **Consecuencia:** `ProfileAggregator` ignora los valores `None` al sumar vistas de un perfil y solo reporta `total_views` si al menos una cuenta del perfil soporta vistas (`views=True`).
+- **Consecuencia:** `ProfileAggregator` utiliza `_sum_nullable_ints` para ignorar valores `None` al sumar vistas de un perfil y solo reporta un entero en `views_total` / `views_last_24h` / `views_last_1h` si al menos una cuenta de la plataforma o perfil expone vistas no nulas.
 
 ---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

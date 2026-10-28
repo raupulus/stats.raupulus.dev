@@ -66,6 +66,7 @@ def build_default_collectors(
         Platform.INSTAGRAM: InstagramCollector(
             settings=settings,
             snapshot_repo=snapshot_repo,
+            use_curl_cffi=True,
         ),
         Platform.TIKTOK: TikTokCollector(
             client_key=settings.tiktok_client_key,

@@ -28,4 +28,10 @@ Integración con la API pública abierta de Bluesky (`https://public.api.bsky.ap
 - No requiere ninguna clave ni token de autenticación.
 
 ---
+
+## 4. Estado de Verificación Empírica
+- Contrato y filtrado de reposts verificados mediante mocks HTTP deterministas (`respx`) en `tests/unit/collectors/test_bluesky.py`.
+- Peticiones en vivo contra `public.api.bsky.app`: `⚠️ sin verificar` en este entorno de desarrollo local.
+
+---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

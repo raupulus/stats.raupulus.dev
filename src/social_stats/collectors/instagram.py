@@ -55,9 +55,11 @@ class InstagramCollector(BaseCollector):
         settings: Settings | None = None,
         snapshot_repo: SnapshotRepository | None = None,
         http_client: httpx.AsyncClient | None = None,
+        use_curl_cffi: bool = False,
     ) -> None:
         super().__init__(snapshot_repo=snapshot_repo, http_client=http_client)
         self.settings = settings if settings is not None else get_settings()
+        self.use_curl_cffi = use_curl_cffi
 
     async def _fetch_level_a_graph_api(
         self,
@@ -254,5 +256,5 @@ class InstagramCollector(BaseCollector):
 
         async with httpx.AsyncClient(timeout=DEFAULT_HTTP_TIMEOUT) as client:
             return await self._collect_with_client(
-                client, accounts, use_httpx_for_level_b=True
+                client, accounts, use_httpx_for_level_b=not self.use_curl_cffi
             )

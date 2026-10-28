@@ -22,6 +22,7 @@ from social_stats.models.enums import Platform, WSEventType
 from social_stats.services.aggregator import ProfileAggregator
 
 HEARTBEAT_INTERVAL_SECONDS = 30.0
+DEFAULT_SEND_TIMEOUT_SECONDS = 5.0
 
 
 @dataclass(eq=False)
@@ -41,9 +42,11 @@ class WSManager:
         aggregator: ProfileAggregator,
         *,
         heartbeat_interval: float = HEARTBEAT_INTERVAL_SECONDS,
+        send_timeout: float = DEFAULT_SEND_TIMEOUT_SECONDS,
     ) -> None:
         self.aggregator = aggregator
         self.heartbeat_interval = heartbeat_interval
+        self.send_timeout = send_timeout
         self._subscriptions: set[WSSubscription] = set()
         self._ws_to_sub: dict[WebSocket, WSSubscription] = {}
         self._heartbeat_task: asyncio.Task[None] | None = None
@@ -82,9 +85,12 @@ class WSManager:
     async def _safe_send(
         self, sub: WSSubscription, payload: dict[str, Any]
     ) -> bool:
-        """Send JSON payload to a subscriber; disconnect and return False on error."""
+        """Send JSON payload to a subscriber with timeout; disconnect and return False on error."""
         try:
-            await sub.websocket.send_json(payload)
+            await asyncio.wait_for(
+                sub.websocket.send_json(payload),
+                timeout=self.send_timeout,
+            )
             return True
         except Exception:
             self.disconnect(sub.websocket)

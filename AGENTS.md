@@ -85,12 +85,12 @@ social-stats-api-websockets/
 │   └── profiles.example.yaml
 ├── docker-compose.yml
 ├── docs/
+│   ├── .gitkeep
 │   ├── deploys/
 │   │   └── docker-y-credenciales.md
 │   ├── future/
-│   │   ├── crypto-prices.md
-│   │   ├── keystrokes.md
-│   │   └── server-health-metrics.md
+│   │   ├── crypto_and_system_metrics.md
+│   │   └── keystrokes.md
 │   └── info/
 │       ├── COMPONENTS.md
 │       ├── DESIGN.md

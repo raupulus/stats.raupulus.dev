@@ -110,7 +110,7 @@ class CollectorScheduler:
         ts = now if now is not None else datetime.now(UTC)
         now_epoch = int(ts.timestamp())
         platform = collector.platform
-        collector.reset_cycle_tracking()
+        collector.reset_cycle_tracking(now_ts=now_epoch)
 
         start_monotonic = time.monotonic()
         try:
@@ -178,7 +178,7 @@ class CollectorScheduler:
                 continue
 
             raw_metrics = batch_results[key]
-            if collector.snapshot_repo is self.snapshot_repo:
+            if key in collector.enriched_accounts:
                 enriched_metrics = raw_metrics
             else:
                 enriched_metrics = await self.snapshot_repo.enrich_and_record(
@@ -217,6 +217,12 @@ class CollectorScheduler:
                     if pstats is None or platform not in pstats.platforms:
                         continue
                     summary = pstats.platforms[platform].model_copy(update={"accounts": []})
+                    account_for_profile = outcome.state.model_copy(
+                        update={
+                            "handle": profile_acc_cfg.handle or outcome.state.handle,
+                            "label": profile_acc_cfg.label or outcome.state.label,
+                        }
+                    )
                     update_data = MetricUpdateData(
                         profile_id=profile_id,
                         platform=platform,
@@ -224,7 +230,7 @@ class CollectorScheduler:
                         label=profile_acc_cfg.label or outcome.state.label,
                         is_new_latest_post=outcome.diff.is_new_latest_post,
                         changes=outcome.diff.changes,
-                        account=outcome.state,
+                        account=account_for_profile,
                         platform_summary=summary,
                     )
                     await self.on_metric_update(update_data)

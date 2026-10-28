@@ -21,4 +21,10 @@ Estrategia de doble nivel para Instagram: Nivel A (Meta Graph API v21.0 con Syst
   - `comments_count` / `edge_media_to_comment.count` $\rightarrow$ `latest_post.comments`.
 
 ---
+
+## 3. Estado de Verificación Empírica
+- Nivel A (Meta Graph API), fallback automático a Nivel B (`web_profile_info`) e invocación de `curl_cffi` (`impersonate="chrome124"`, `use_curl_cffi=True`) verificados mediante tests unitarios en `tests/unit/collectors/test_instagram.py`.
+- Peticiones en vivo contra `graph.facebook.com` y `www.instagram.com/api/v1/users/web_profile_info/`: `⚠️ sin verificar` con tokens/IPs de producción.
+
+---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

@@ -54,7 +54,8 @@ Servicios de coordinación del núcleo: agregación multiperfil (`ProfileAggrega
 
 ## 7. Trampas conocidas y consideraciones de diseño
 - Precedencia determinista de estado en `compute_platform_status`: todas `disabled` $\rightarrow$ `disabled`; todas las activas `healthy` $\rightarrow$ `healthy`; todas las activas `error` $\rightarrow$ `error`; cualquier mezcla o cuenta en `stale` $\rightarrow$ `stale`.
-- `WSManager` envía mensajes de forma concurrente con `asyncio.gather` y desconecta automáticamente sockets caídos sin bloquear a otros suscriptores.
+- `WSManager` envía mensajes de forma concurrente con `asyncio.gather` aplicando un timeout de envío por socket (`DEFAULT_SEND_TIMEOUT_SECONDS = 5.0`) mediante `asyncio.wait_for`, desconectando automáticamente clientes lentos o colgados sin bloquear `CollectorScheduler` ni los heartbeats.
+- Cuando una misma cuenta está referenciada en varios perfiles con distinto `label` o `handle`, `CollectorScheduler` proyecta los metadatos específicos de cada perfil al construir `MetricUpdateData`.
 
 ---
 

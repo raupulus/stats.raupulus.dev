@@ -201,3 +201,54 @@ def test_websocket_unknown_profile_and_flood_protection(
                 ws_flood.send_text(f"ping-{i}")
             ws_flood.receive_json()
         assert flood_exc.value.code == 1008
+
+
+async def test_ws_manager_send_timeout_disconnects_stalled_client_without_blocking(
+    aggregator: ProfileAggregator,
+) -> None:
+    """
+    Verify that a stalled WebSocket client whose send_json hangs longer than send_timeout
+    is automatically timed out and disconnected by WSManager without blocking broadcasts
+    to healthy subscribers.
+    """
+    import asyncio
+    from unittest.mock import MagicMock
+
+    ws_manager = WSManager(aggregator, heartbeat_interval=3600.0, send_timeout=0.05)
+
+    stalled_ws = MagicMock()
+
+    async def _stalled_send(payload: object) -> None:
+        await asyncio.sleep(10.0)
+
+    stalled_ws.send_json = _stalled_send
+
+    healthy_messages: list[object] = []
+    healthy_ws = MagicMock()
+
+    async def _healthy_send(payload: object) -> None:
+        healthy_messages.append(payload)
+
+    healthy_ws.send_json = _healthy_send
+
+    # Register both subscribers directly
+    from social_stats.services.ws_manager import WSSubscription
+
+    sub_stalled = WSSubscription(websocket=stalled_ws, profile_id=None)
+    sub_healthy = WSSubscription(websocket=healthy_ws, profile_id=None)
+    ws_manager._subscriptions.add(sub_stalled)
+    ws_manager._ws_to_sub[stalled_ws] = sub_stalled
+    ws_manager._subscriptions.add(sub_healthy)
+    ws_manager._ws_to_sub[healthy_ws] = sub_healthy
+
+    assert ws_manager.active_connections_count == 2
+
+    # Broadcast heartbeat -> should complete quickly (~0.05s) and disconnect stalled_ws
+    await asyncio.wait_for(ws_manager.broadcast_heartbeat(uptime_seconds=42), timeout=0.5)
+
+    assert len(healthy_messages) == 1
+    assert ws_manager.active_connections_count == 1
+    assert sub_stalled not in ws_manager._subscriptions
+    assert sub_healthy in ws_manager._subscriptions
+
+

@@ -368,3 +368,154 @@ async def test_scheduler_background_lifecycle_and_restart_hydration(
     assert restored.metrics.followers_total == 1000
     assert restored.status == CollectorStatus.HEALTHY
 
+
+class _SnapshotEnrichingCollector(BaseCollector):
+    platform = Platform.YOUTUBE
+
+    def __init__(self, snapshot_repo: SnapshotRepository) -> None:
+        super().__init__(snapshot_repo=snapshot_repo)
+
+    async def collect_batch(
+        self, accounts: list[AccountConfig]
+    ) -> dict[str, AccountMetrics]:
+        out: dict[str, AccountMetrics] = {}
+        for acc in accounts:
+            raw = AccountMetrics(followers_total=5000, posts_total=50, views_total=100_000)
+            out[acc.account_key] = await self.enrich_with_snapshots(acc.account_key, raw)
+        return out
+
+
+async def test_scheduler_propagates_cycle_timestamp_and_prevents_duplicate_snapshots(
+    memory_db: Database,
+    sample_registry: ProfilesRegistry,
+    state_store: StateStore,
+    aggregator: ProfileAggregator,
+) -> None:
+    """
+    Verify that when a collector calls self.enrich_with_snapshots() inside collect_batch():
+    1. CollectorScheduler propagates its custom `now` timestamp to BaseCollector.
+    2. Even if collector.snapshot_repo and scheduler.snapshot_repo are distinct instances on
+       the same Database, enrich_and_record is executed only ONCE per account per cycle.
+    """
+    repo_collector = SnapshotRepository(memory_db)
+    repo_scheduler = SnapshotRepository(memory_db)
+    collector = _SnapshotEnrichingCollector(snapshot_repo=repo_collector)
+
+    scheduler = CollectorScheduler(
+        settings=Settings(),
+        registry=sample_registry,
+        collectors={Platform.YOUTUBE: collector},
+        snapshot_repo=repo_scheduler,
+        state_store=state_store,
+        aggregator=aggregator,
+    )
+
+    custom_now = datetime(2026, 10, 28, 10, 0, 0, tzinfo=UTC)
+    target_account = sample_registry.profiles["raupulus"].accounts["youtube"][0]
+
+    await scheduler.run_collector_once(collector, [target_account], now=custom_now)
+
+    history = await repo_scheduler.get_history(
+        "youtube",
+        target_account.account_key,
+        window_seconds=3600,
+        now_ts=int(custom_now.timestamp()),
+    )
+    assert len(history) == 1
+    assert history[0].timestamp == custom_now
+
+
+async def test_scheduler_projects_profile_specific_label_in_metric_update(
+    memory_db: Database,
+) -> None:
+    """
+    Verify that when the same account is referenced in two profiles with different labels,
+    MetricUpdateData emitted for each profile projects that profile's specific label and handle.
+    """
+    shared_key = "UC9999999999999999999999"
+    registry = ProfilesRegistry.model_validate(
+        {
+            "profiles": {
+                "perfil_a": {
+                    "name": "Perfil A",
+                    "accounts": {
+                        "youtube": [
+                            {
+                                "id": shared_key,
+                                "handle": "@handle_a",
+                                "label": "Etiqueta Perfil A",
+                            }
+                        ]
+                    },
+                },
+                "perfil_b": {
+                    "name": "Perfil B",
+                    "accounts": {
+                        "youtube": [
+                            {
+                                "id": shared_key,
+                                "handle": "@handle_b",
+                                "label": "Etiqueta Perfil B",
+                            }
+                        ]
+                    },
+                },
+            }
+        }
+    )
+
+    store = StateStore(memory_db)
+    await store.initialize_from_config_and_db(registry)
+    repo = SnapshotRepository(memory_db)
+    agg = ProfileAggregator(registry, store)
+
+    updates_by_profile: dict[str, MetricUpdateData] = {}
+
+    async def on_update(data: MetricUpdateData) -> None:
+        updates_by_profile[data.profile_id] = data
+
+    collector = _SnapshotEnrichingCollector(snapshot_repo=repo)
+    scheduler = CollectorScheduler(
+        settings=Settings(),
+        registry=registry,
+        collectors={Platform.YOUTUBE: collector},
+        snapshot_repo=repo,
+        state_store=store,
+        aggregator=agg,
+        on_metric_update=on_update,
+    )
+
+    unique_yt = registry.get_unique_accounts_by_platform()["youtube"]
+    await scheduler.run_collector_once(collector, unique_yt)
+
+    assert set(updates_by_profile.keys()) == {"perfil_a", "perfil_b"}
+    assert updates_by_profile["perfil_a"].account.label == "Etiqueta Perfil A"
+    assert updates_by_profile["perfil_a"].account.handle == "@handle_a"
+    assert updates_by_profile["perfil_b"].account.label == "Etiqueta Perfil B"
+    assert updates_by_profile["perfil_b"].account.handle == "@handle_b"
+
+
+def test_diff_engine_when_previous_latest_post_is_none() -> None:
+    """
+    Verify DiffEngine marks is_new_latest_post=True and uses baseline previous=0
+    when the previous state had latest_post=None and the current state has a latest_post.
+    """
+    prev = AccountMetrics(followers_total=100, posts_total=0, latest_post=None)
+    curr = AccountMetrics(
+        followers_total=105,
+        posts_total=1,
+        latest_post=LatestPostMetrics(
+            post_id="first_post",
+            views=50,
+            likes=10,
+            comments=2,
+            shares=1,
+        ),
+    )
+    diff = DiffEngine.compute_diff(prev, curr)
+    assert diff.is_new_latest_post is True
+    assert diff.changes["latest_post.views"].previous == 0
+    assert diff.changes["latest_post.views"].current == 50
+    assert diff.changes["latest_post.views"].delta == 50
+
+

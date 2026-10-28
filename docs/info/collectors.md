@@ -63,6 +63,8 @@ Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección as�
 
 ## 7. Trampas conocidas y consideraciones de diseño
 - Ninguna llamada HTTP supera los 15 segundos (`DEFAULT_HTTP_TIMEOUT = httpx.Timeout(15.0, connect=5.0)`).
+- `InstagramCollector` (en fallback Nivel B) y `TikTokCollector` (en extracción SSR) utilizan `curl_cffi` con `impersonate="chrome124"` cuando `use_curl_cffi=True` (habilitado por defecto en `build_default_collectors` de `main.py`) y admiten inyección de `httpx.AsyncClient` en tests deterministas.
+- `BaseCollector.reset_cycle_tracking(now_ts=...)` propaga el instante de evaluación de `CollectorScheduler` hacia `enrich_with_snapshots()` y registra las cuentas enriquecidas en `enriched_accounts` para evitar inserciones duplicadas de snapshots en un mismo ciclo.
 - En `TwitterCollector`, los tweets del timeline se ordenan por `snowflake id` numérico descendente para evitar que un tweet fijado antiguo sea tomado como el último post.
 - En `LinkedInCollector`, la ausencia de credenciales marca la cuenta como `disabled` en lugar de `error` para no degradar el estado de salud global si no se utiliza LinkedIn.
 

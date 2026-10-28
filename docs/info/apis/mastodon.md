@@ -27,7 +27,14 @@ Integración con la API REST pública de instancias federadas de Mastodon.
 
 ## 3. Autenticación y Resiliencia
 - No requiere autenticación para cuentas públicas.
+- Cachea en memoria (`_account_id_cache`) el `id` interno resuelto por `accounts/lookup` como respaldo si una cuenta no declaró `account_id` estático en `profiles.yaml`.
 - Cada cuenta se recolecta de forma aislada: la caída de una instancia federada no afecta al resto de instancias configuradas.
+
+---
+
+## 4. Estado de Verificación Empírica
+- Contrato multi-instancia y aislamiento de errores verificados mediante mocks HTTP deterministas (`respx`) en `tests/unit/collectors/test_mastodon.py`.
+- Peticiones en vivo contra instancias federadas reales: `⚠️ sin verificar` en este entorno de desarrollo local.
 
 ---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

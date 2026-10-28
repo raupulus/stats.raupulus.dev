@@ -62,6 +62,7 @@ Capa de persistencia histórica en SQLite (`WAL`), motor matemático de cálculo
 
 ## 7. Trampas conocidas y consideraciones de diseño
 - `calculate_deltas()` debe ejecutarse **antes** de `insert_snapshot()` para el mismo timestamp (o usar `enrich_and_record()`), además de incluir la guarda `timestamp < now_ts` en la consulta de calentamiento.
+- `Database.execute_write()` serializa todas las escrituras sobre la conexión `aiosqlite` compartida mediante `write_lock` (`asyncio.Lock`) y protege el par `execute` + `commit` con `asyncio.shield` para evitar transacciones a medias si se cancela una tarea durante el apagado.
 - Cuando cambia `latest_post.post_id`, `DiffEngine` toma `previous = 0` como línea base del nuevo post para evitar deltas negativos al reemplazar un post antiguo con miles de visitas por uno recién publicado.
 
 ---
