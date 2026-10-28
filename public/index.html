@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Panel público de telemetría y estadísticas en tiempo real de redes sociales, cripto y keycounter — stats.raupulus.dev">
+  <meta name="theme-color" content="#091421">
+  <title>stats.raupulus.dev · Telemetría en Tiempo Real</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="ambient-backdrop" aria-hidden="true"></div>
+
+  <header class="top-telemetry-bar">
+    <div class="container top-bar-inner">
+      <div class="brand-identity">
+        <span class="brand-pulse" aria-hidden="true"></span>
+        <div>
+          <div class="brand-kicker">TELEMETRY NODE · READ-ONLY STREAM</div>
+          <h1 class="brand-title">stats.raupulus.dev</h1>
+        </div>
+      </div>
+
+      <nav class="category-pills" aria-label="Filtro de categorías de métricas">
+        <button type="button" class="filter-pill is-active" data-category="all" aria-pressed="true">
+          Todas las métricas
+        </button>
+        <button type="button" class="filter-pill" data-category="social" aria-pressed="false">
+          Redes Sociales
+        </button>
+        <button type="button" class="filter-pill" data-category="crypto" aria-pressed="false">
+          Cripto Spot
+        </button>
+        <button type="button" class="filter-pill" data-category="keycounter" aria-pressed="false">
+          Keycounter
+        </button>
+      </nav>
+
+      <div class="ws-status-cluster" aria-live="polite">
+        <div id="ws-status-pill" class="ws-status-pill is-connecting">
+          <span id="ws-status-dot" class="ws-status-dot"></span>
+          <span id="ws-status-text">CONECTANDO STREAM…</span>
+        </div>
+        <div class="sync-clock">
+          <span>Sincronizado:</span>
+          <code id="last-sync-time">--:--:-- UTC</code>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container dashboard-main">
+    <!-- Bloque 1: Ámbito de Supervisión (Selector de Perfiles con tarjeta ✓ ACTIVO) -->
+    <section class="telemetry-section" aria-labelledby="scope-heading">
+      <div class="section-header">
+        <div>
+          <h2 id="scope-heading" class="section-title">ÁMBITO DE SUPERVISIÓN</h2>
+          <p class="section-subtitle">
+            Selecciona un perfil específico o supervisa el agregado global de canales públicos
+          </p>
+        </div>
+        <div class="context-pill">
+          <span>Contexto activo:</span>
+          <strong id="active-context-label">Todos los perfiles (Global)</strong>
+        </div>
+      </div>
+
+      <div id="profiles-selector-grid" class="profiles-selector-grid" role="group" aria-label="Selector de perfiles monitorizados">
+        <!-- Renderizado dinámicamente con createElement + textContent -->
+      </div>
+    </section>
+
+    <!-- Bloque 2: Resumen Global de Impacto Social -->
+    <section id="section-social" class="telemetry-section" aria-labelledby="social-heading">
+      <div class="section-header">
+        <div>
+          <h2 id="social-heading" class="section-title">AUDIENCIA Y REDES SOCIALES</h2>
+          <p class="section-subtitle">
+            Métricas consolidadas en tiempo real y desglose multicanal por plataforma
+          </p>
+        </div>
+        <div class="context-pill">
+          <span>Plataformas activas:</span>
+          <strong id="active-social-count">0</strong>
+        </div>
+      </div>
+
+      <div class="kpi-summary-strip">
+        <article class="kpi-beam-card">
+          <span class="kpi-label">SEGUIDORES TOTALES (COMBINADOS)</span>
+          <div class="kpi-value-row">
+            <strong id="kpi-total-followers" class="kpi-mono-value">0</strong>
+            <span id="kpi-delta-followers" class="delta-badge is-neutral">24h: +0</span>
+          </div>
+        </article>
+
+        <article class="kpi-beam-card">
+          <span class="kpi-label">VISUALIZACIONES ACUMULADAS</span>
+          <div class="kpi-value-row">
+            <strong id="kpi-total-views" class="kpi-mono-value">0</strong>
+            <span id="kpi-delta-views-24h" class="delta-badge is-neutral">24h: +0</span>
+          </div>
+        </article>
+
+        <article class="kpi-beam-card">
+          <span class="kpi-label">PUBLICACIONES TOTALES</span>
+          <div class="kpi-value-row">
+            <strong id="kpi-total-posts" class="kpi-mono-value">0</strong>
+            <span id="kpi-delta-views-1h" class="delta-badge is-neutral">Vistas 1h: +0</span>
+          </div>
+        </article>
+      </div>
+
+      <div id="social-platforms-grid" class="social-platforms-grid">
+        <!-- Tarjetas de redes sociales renderizadas dinámicamente -->
+      </div>
+    </section>
+
+    <!-- Bloque 3: Cotización Cripto Spot (USD y EUR) -->
+    <section id="section-crypto" class="telemetry-section" aria-labelledby="crypto-heading">
+      <div class="section-header">
+        <div>
+          <h2 id="crypto-heading" class="section-title">MERCADO CRIPTO SPOT (USD / EUR)</h2>
+          <p class="section-subtitle">
+            Cotización en vivo y variación 24h en dólares estadounidenses y euros
+          </p>
+        </div>
+        <div class="context-pill">
+          <span>Fuente:</span>
+          <strong>Spot 24h · USD &amp; EUR</strong>
+        </div>
+      </div>
+
+      <div id="crypto-spot-grid" class="crypto-spot-grid">
+        <!-- Tarjetas BTC / ADA renderizadas dinámicamente -->
+      </div>
+    </section>
+
+    <!-- Bloque 4: Keycounter (Exclusivamente Totales Históricos Acumulados) -->
+    <section id="section-keycounter" class="telemetry-section" aria-labelledby="keycounter-heading">
+      <div class="section-header">
+        <div>
+          <h2 id="keycounter-heading" class="section-title">KEYCOUNTER · TELEMETRÍA DE ENTRADA</h2>
+          <p class="section-subtitle">
+            Contadores históricos acumulados de pulsaciones de teclado y clics de ratón
+          </p>
+        </div>
+        <div class="context-pill">
+          <span>Modo público:</span>
+          <strong>Acumulado Histórico Total</strong>
+        </div>
+      </div>
+
+      <div id="keycounter-totals-grid" class="keycounter-totals-grid">
+        <article class="keycounter-beam-card">
+          <div class="kc-card-top">
+            <span class="kc-badge">TECLADO · PULSACIONES TOTALES</span>
+            <code id="kc-status-pill" class="spec-code-pill">ACTIVO</code>
+          </div>
+          <div id="kc-pulsations-total" class="kc-giant-counter">--</div>
+          <p class="kc-footnote">
+            Total histórico acumulado de teclas pulsadas registradas por el agente Keycounter.
+          </p>
+        </article>
+
+        <article class="keycounter-beam-card">
+          <div class="kc-card-top">
+            <span class="kc-badge">RATÓN · CLICS TOTALES</span>
+            <code id="kc-account-pill" class="spec-code-pill">@raupulus</code>
+          </div>
+          <div id="kc-clicks-total" class="kc-giant-counter">--</div>
+          <p class="kc-footnote">
+            Total histórico acumulado de clics de ratón registrados en estaciones de trabajo.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Bloque 5: Tabla de Especificaciones y Flujo de Telemetría (Estilo Haz Diagonal) -->
+    <section class="telemetry-section" aria-labelledby="telemetry-table-heading">
+      <div class="section-header">
+        <div>
+          <h2 id="telemetry-table-heading" class="section-title">REGISTRO TÉCNICO Y STREAM DE EVENTOS</h2>
+          <p class="section-subtitle">
+            Parámetros de conexión del canal público y últimas actualizaciones recibidas en vivo
+          </p>
+        </div>
+        <div class="context-pill">
+          <span>Eventos recibidos:</span>
+          <strong id="ws-events-counter">0</strong>
+        </div>
+      </div>
+
+      <div class="telemetry-spec-panel">
+        <div class="spec-row">
+          <div class="spec-label">Canal de Transporte</div>
+          <div class="spec-values">
+            <code class="spec-code-pill">WS /ws/public</code>
+            <code class="spec-code-pill">Read-Only Stream</code>
+          </div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-label">Política de Privacidad Keycounter</div>
+          <div class="spec-values">
+            <code class="spec-code-pill">pulsations_total</code>
+            <code class="spec-code-pill">clicks_total</code>
+            <code class="spec-code-pill is-muted">1h / 24h redactados</code>
+          </div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-label">Uptime del Servidor / Heartbeat</div>
+          <div class="spec-values">
+            <code id="spec-server-uptime" class="spec-code-pill">Sincronizando…</code>
+            <code id="spec-last-event-type" class="spec-code-pill">snapshot</code>
+          </div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-label">Últimas Variaciones en Tiempo Real</div>
+          <div id="live-events-pills" class="spec-values">
+            <code class="spec-code-pill">Esperando eventos metric_update…</code>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="dashboard-footer">
+    <div class="container footer-inner">
+      <span>
+        Arquitectura Unidireccional Read-Only · <a href="https://raupulus.dev" target="_blank" rel="noopener noreferrer">raupulus.dev</a>
+      </span>
+      <span>Contacto público: <code>public@raupulus.dev</code></span>
+    </div>
+  </footer>
+
+  <script src="/js/app.js" defer></script>
+</body>
+</html>

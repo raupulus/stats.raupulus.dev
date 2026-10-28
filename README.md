@@ -61,18 +61,24 @@ mkdir -p data
 docker compose up --build -d
 ```
 
-### Endpoints REST Principales (Read-Only)
-- `GET /api/v1/health` — Salud del contenedor, base de datos SQLite y estado de colectores.
-- `GET /api/v1/profiles` — Catálogo de perfiles configurados.
-- `GET /api/v1/crypto` — Cotizaciones spot y estadísticas 24h de criptomonedas (`BTC`, `ADA`) en USD y EUR.
-- `GET /api/v1/keycounter` — Estadísticas de pulsaciones de teclas y clics de ratón (totales, hoy y última hora).
-- `GET /api/v1/stats` — Estadísticas globales (filtrables con `?profile=` y `?platform=`).
-- `GET /api/v1/profiles/{profile_id}/stats` — Estadísticas agregadas y por cuenta de un perfil.
-- `GET /api/v1/profiles/{profile_id}/history?window=24h` — Serie temporal histórica (`1h`, `24h`, `7d`, `30d`).
+### Arquitectura de Seguridad de 3 Canales (Read-Only)
 
-### Canales WebSocket en Tiempo Real (Read-Only)
-- `ws://<host>:8000/ws/stats` — Stream global de todos los perfiles (`?profile={id}&platform={p}`).
-- `ws://<host>:8000/ws/profiles/{profile_id}` — Stream exclusivo de un perfil específico.
+1. **Web Pública y WebSocket Público (`public/` + `WS /ws/public`):**
+   - El directorio `public/` actúa como `DocumentRoot` aislado para `https://stats.raupulus.dev/` (o servido automáticamente en `/` en entorno local).
+   - `WS /ws/public` no requiere token, pero aplica validación estricta de `Origin` (`WS_PUBLIC_ALLOWED_ORIGINS`), límite de conexiones por IP (`WS_PUBLIC_MAX_PER_IP`), límite global (`WS_PUBLIC_MAX_CONNECTIONS`) y cierre inmediato (`1008`) al primer mensaje entrante del cliente.
+   - Expone únicamente perfiles/cuentas con `"public": true`, todas las redes sociales públicas, cripto spot (`BTC`, `ADA` en USD y EUR) y en `keycounter` **solo los totales acumulados históricos** (`pulsations_total` y `clicks_total`).
+2. **WebSocket Privado Autenticado (`WS /ws/stats` y `WS /ws/profiles/{profile_id}`):**
+   - Requiere `API_BEARER_TOKEN` (`Authorization: Bearer <token>`, `Sec-WebSocket-Protocol: bearer, <token>` o `?token=<token>`).
+   - Emite el 100% de las métricas sin recortes (incluyendo ventanas 1h y hoy de Keycounter y eventos `collector_status`).
+3. **API REST Privada Autenticada (`GET /api/v1/*` con `Authorization: Bearer <API_BEARER_TOKEN>`):**
+   - `GET /api/v1/health` — Salud del contenedor, base de datos SQLite y estado detallado de colectores.
+   - `GET /api/v1/profiles` — Catálogo de perfiles configurados.
+   - `GET /api/v1/crypto` — Cotizaciones spot y estadísticas 24h de criptomonedas (`BTC`, `ADA`) en USD y EUR.
+   - `GET /api/v1/keycounter` — Estadísticas completas de pulsaciones de teclas y clics de ratón (totales, hoy y última hora).
+   - `GET /api/v1/stats` — Estadísticas globales (filtrables con `?profile=` y `?platform=`).
+   - `GET /api/v1/profiles/{profile_id}/stats` — Estadísticas agregadas y por cuenta de un perfil.
+   - `GET /api/v1/profiles/{profile_id}/history?window=24h` — Serie temporal histórica (`1h`, `24h`, `7d`, `30d`).
+   - *(Healthcheck interno de Docker: `GET /healthz`, restringido exclusivamente a loopback local `127.0.0.1` / `::1` sin proxy inverso).*
 
 ---
 

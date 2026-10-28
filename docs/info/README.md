@@ -28,12 +28,12 @@ Bienvenido a la documentación técnica **viva** del proyecto. Este directorio c
 
 | Módulo | Archivo | Descripción |
 |---|---|---|
-| `config` | [`config.md`](./config.md) | Configuración de variables de entorno (`.env`) y cargador/validador declarativo de `config/profiles.json` y `config/profiles.yaml` (`enable`, `interval_minutes`). |
+| `config` | [`config.md`](./config.md) | Configuración de variables de entorno (`.env`) y cargador/validador declarativo de `config/profiles.json` y `config/profiles.yaml` (`enable`, `public`, `interval_minutes`). |
 | `models` | [`models.md`](./models.md) | Modelos Pydantic v2 de métricas, estados, perfiles, respuestas REST y eventos WebSocket. |
 | `storage` | [`storage.md`](./storage.md) | Base de datos SQLite WAL, motor de snapshots ($\Delta_{1h}$, $\Delta_{24h}$), `StateStore` en memoria y `DiffEngine`. |
 | `services` | [`services.md`](./services.md) | Agregador multiperfil (`ProfileAggregator`), planificador (`CollectorScheduler`) y gestor WebSocket (`WSManager`). |
 | `collectors` | [`collectors.md`](./collectors.md) | Clase base `BaseCollector` y los 9 proveedores de recolección (redes sociales, cripto y keycounter). |
-| `api` / `main` | [`api.md`](./api.md) | Servidor FastAPI Read-Only, endpoints REST (`/api/v1/*`) y streaming WebSocket (`/ws/*`). |
+| `api` / `main` | [`api.md`](./api.md) | Servidor FastAPI Read-Only, seguridad de 3 canales (`/ws/public`, `/ws/stats`, `/api/v1/*`), `/healthz` y montaje estático `public/`. |
 
 
 ---

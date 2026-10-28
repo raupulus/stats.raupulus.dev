@@ -116,6 +116,14 @@ social-stats-api-websockets/
 │           ├── twitter.md
 │           └── youtube.md
 ├── pyproject.toml
+├── public/
+│   ├── css/
+│   │   └── styles.css
+│   ├── favicon.svg
+│   ├── index.html
+│   ├── js/
+│   │   └── app.js
+│   └── robots.txt
 ├── src/
 │   └── social_stats/
 │       ├── __init__.py
@@ -126,7 +134,8 @@ social-stats-api-websockets/
 │       │   ├── router.py
 │       │   ├── routes_health.py
 │       │   ├── routes_stats.py
-│       │   └── routes_ws.py
+│       │   ├── routes_ws.py
+│       │   └── security.py
 │       ├── collectors/
 │       │   ├── __init__.py
 │       │   ├── base.py

@@ -387,3 +387,44 @@ async def test_keycounter_stats_endpoint(seeded_api_app: httpx.AsyncClient) -> N
     not_found = await seeded_api_app.get("/api/v1/keycounter", params={"account": "inexistente"})
     assert not_found.status_code == 404
     assert not_found.json()["error"] == "keycounter_account_not_found"
+
+
+async def test_public_web_entrypoint_and_dom_security(
+    seeded_api_app: httpx.AsyncClient,
+) -> None:
+    """
+    Verify:
+    - GET / serves public/index.html without requiring Authorization header.
+    - GET /css/styles.css contains the exact raupulus.dev blue palette tokens.
+    - GET /js/app.js connects to /ws/public and uses zero dangerous DOM sinks.
+    """
+    import re
+
+    index_resp = await seeded_api_app.get("/", headers={"Authorization": ""})
+    assert index_resp.status_code == 200
+    assert "stats.raupulus.dev" in index_resp.text
+    assert "ÁMBITO DE SUPERVISIÓN" in index_resp.text
+    assert "default-src 'self'" in index_resp.headers.get(
+        "Content-Security-Policy", ""
+    )
+
+    css_resp = await seeded_api_app.get("/css/styles.css", headers={"Authorization": ""})
+    assert css_resp.status_code == 200
+    for token in ("#091421", "#050f1c", "#a3c9ff", "#3272b8", "#4cd6ff"):
+        assert token in css_resp.text
+
+    js_resp = await seeded_api_app.get("/js/app.js", headers={"Authorization": ""})
+    assert js_resp.status_code == 200
+    assert "/ws/public" in js_resp.text
+    assert "textContent" in js_resp.text
+    # Ensure no executable code uses innerHTML, outerHTML, insertAdjacentHTML, document.write, or eval
+    code_lines = [
+        line
+        for line in js_resp.text.splitlines()
+        if not line.strip().startswith(("//", "/*", "*"))
+    ]
+    executable_js = "\n".join(code_lines)
+    assert not re.search(
+        r"\b(innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval)\b",
+        executable_js,
+    )

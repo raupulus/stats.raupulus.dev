@@ -39,7 +39,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN groupadd -g 10001 appgroup && \
     useradd -u 10001 -g appgroup -d /tmp -s /sbin/nologin appuser && \
-    mkdir -p /app/config /app/data && \
+    mkdir -p /app/config /app/data /app/public && \
     chown -R appuser:appgroup /app
 
 WORKDIR /app
@@ -47,6 +47,7 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=appuser:appgroup config/profiles.example.json /app/config/profiles.example.json
 COPY --chown=appuser:appgroup config/profiles.example.yaml /app/config/profiles.example.yaml
+COPY --chown=appuser:appgroup public/ /app/public/
 
 USER appuser
 
