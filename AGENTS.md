@@ -32,6 +32,11 @@ Su función es monitorizar y centralizar estadísticas de redes sociales (YouTub
    * `docs/` sí se versiona para documentación técnica formal y estable.
    * No commitear artefactos de IDEs, cachés de Python (`__pycache__`, `.pytest_cache`), entornos virtuales (`.venv`) ni ficheros de estado local de Docker.
 
+4. **Commits automáticos agrupados por funcionalidad:**
+   * Realizar commits automáticamente por cada grupo de funcionalidades o tareas cerradas **antes de cambiar de contexto**, de modo que todos los cambios relacionados (código, configuración, tests y documentación) vayan siempre agrupados en commits atómicos y descriptivos.
+   * Nunca mezclar tareas de diferentes funcionalidades, refactorizaciones no relacionadas o configuraciones ajenas en un mismo commit.
+   * Comprobar y garantizar la ausencia total de datos personales privados, rutas del host o credenciales antes de cada commit.
+
 ---
 
 ## 3. Arquitectura del sistema (Planificación)
@@ -122,6 +127,7 @@ Cualquier agente que trabaje en este repositorio debe aplicar este protocolo de 
 - *Módulos implementados en `src/`:* `⚠️ Sin módulos implementados aún`
 
 ### 5.4. Checklist Obligatorio antes de Cerrar Cualquier Tarea
+- [ ] Commits realizados automáticamente agrupando cada funcionalidad cerrada antes de cambiar de contexto
 - [ ] Documentación del módulo tocado actualizada en el **mismo commit**
 - [ ] Fechas de «Última revisión» al día en todos los archivos `.md` tocados bajo `docs/`
 - [ ] Módulos nuevos creados desde `_MODULE_TEMPLATE.md` e indexados en `docs/info/README.md` y `AGENTS.md`
