@@ -78,7 +78,7 @@ Sistema de configuración tipado del servidor: carga y validación de variables 
 | `WS_PUBLIC_MAX_PER_IP` | `int` | `5` | Límite de conexiones simultáneas por IP en `/ws/public` |
 | `WS_PUBLIC_MAX_CONNECTIONS` | `int` | `200` | Límite global de conexiones simultáneas en `/ws/public` |
 | `SNAPSHOT_RETENTION_DAYS` | `int` | `30` | Días de retención de snapshots históricos |
-| `KEYCOUNTER_API_URL` | `str` | `"https://api.raupulus.dev/api/v2/keycounter/stats"` | URL del endpoint de estadísticas de Keycounter |
+| `KEYCOUNTER_API_URL` | `str` | `"https://api.example.com/api/v2/keycounter/stats"` | URL del endpoint de estadísticas de Keycounter |
 | `KEYCOUNTER_API_TOKEN` | `str` | `""` | Token Bearer de autenticación para Keycounter |
 
 ---

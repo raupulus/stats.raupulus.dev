@@ -1,4 +1,4 @@
-"""Unit tests for KeycounterCollector (api.raupulus.dev API v2)."""
+"""Unit tests for KeycounterCollector (Keycounter API v2)."""
 
 from __future__ import annotations
 
@@ -130,13 +130,13 @@ async def test_keycounter_collector_404_and_error_handling() -> None:
         )
         acc_404 = AccountConfig(
             handle="acc404",
-            instance="https://api.raupulus.dev/api/v2/notfound",
+            instance="https://api.example.com/api/v2/notfound",
             platform="keycounter",
             account_key="acc404",
         )
         acc_false = AccountConfig(
             handle="accfalse",
-            instance="https://api.raupulus.dev/api/v2/keycounter/stats",
+            instance="https://api.example.com/api/v2/keycounter/stats",
             platform="keycounter",
             account_key="accfalse",
         )
@@ -202,7 +202,7 @@ async def test_error_sanitization_redacts_urls_and_tokens(
         account_key="raupulus",
         handle="raupulus",
         status=CollectorStatus.ERROR,
-        error_message="Failed https://api.raupulus.dev/api/v2/keycounter/stats?token=raw_db_leak_777",
+        error_message="Failed https://api.example.com/api/v2/keycounter/stats?token=raw_db_leak_777",
     )
     await snapshot_repo.db.upsert_latest_state(legacy_state, consecutive_failures=2)
 

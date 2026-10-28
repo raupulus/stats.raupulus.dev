@@ -54,8 +54,8 @@ Guía operativa para desplegar el contenedor en un servidor privado accesible po
 - Funcionan sin claves en `.env` mediante la Syndication API de Twitter y el extractor de hidratación SSR de TikTok.
 - Opcionalmente admiten `TWITTER_AUTH_TOKEN_COOKIE`/`TWITTER_CT0_COOKIE` o credenciales de TikTok Display API (`TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET`).
 
-### 3.5. Keycounter (`KEYCOUNTER_API_TOKEN`)
-- Asignar en `.env` el token Bearer generado para `GET https://api.raupulus.dev/api/v2/keycounter/stats` en `KEYCOUNTER_API_TOKEN`.
+### 3.5. Keycounter (`KEYCOUNTER_API_URL` y `KEYCOUNTER_API_TOKEN`)
+- Asignar en `.env` la URL del servidor de telemetría en `KEYCOUNTER_API_URL` y el token Bearer en `KEYCOUNTER_API_TOKEN`.
 - El límite de tasa es de 60 peticiones/minuto por token; se recomienda `"interval_minutes": 1` en `config/profiles.json`.
 
 ---

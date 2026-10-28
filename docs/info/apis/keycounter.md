@@ -1,13 +1,13 @@
-# Integración de API: Keycounter (`api.raupulus.dev`)
+# Integración de API: Keycounter (API v2)
 
-- **Fuente oficial:** `https://api.raupulus.dev/api/v2/keycounter/stats`
+- **Endpoint configurable (`KEYCOUNTER_API_URL`):** `https://api.example.com/api/v2/keycounter/stats`
 - **Colector:** [`KeycounterCollector`](../../../src/social_stats/collectors/keycounter.py)
-- **Estado:** ✅ **Verificado empíricamente en vivo contra producción** (2026-10-28 22:12 UTC). La llamada `GET https://api.raupulus.dev/api/v2/keycounter/stats` con cabecera Bearer Token responde `HTTP 200 OK` con formato `application/json` conforme a la especificación, alimentando métricas de pulsaciones (`lifetime`, `today`, `last_hour`) y clics de ratón en tiempo real.
+- **Estado:** ✅ **Verificado empíricamente en vivo contra producción** (2026-10-28 22:12 UTC). La llamada `GET <KEYCOUNTER_API_URL>` con cabecera Bearer Token responde `HTTP 200 OK` con formato `application/json` conforme a la especificación, alimentando métricas de pulsaciones (`lifetime`, `today`, `last_hour`) y clics de ratón en tiempo real.
 
 ---
 
 ## 1. Estrategia de Integración
-- **Método y Endpoint:** `GET https://api.raupulus.dev/api/v2/keycounter/stats` (configurable mediante `KEYCOUNTER_API_URL` o campo `instance` por cuenta).
+- **Método y Endpoint:** `GET <KEYCOUNTER_API_URL>` (configurable en `.env` mediante `KEYCOUNTER_API_URL`, por defecto `https://api.example.com/api/v2/keycounter/stats`, o campo `instance` por cuenta).
 - **Cabeceras obligatorias:**
   - `Authorization: Bearer <KEYCOUNTER_API_TOKEN>`
   - `Accept: application/json`

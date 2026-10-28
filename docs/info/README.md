@@ -50,7 +50,7 @@ Bienvenido a la documentación técnica **viva** del proyecto. Este directorio c
 | TikTok | [`apis/tiktok.md`](./apis/tiktok.md) | Hidratación SSR `__UNIVERSAL_DATA_FOR_REHYDRATION__` + Display API v2 auto-refresh. |
 | LinkedIn | [`apis/linkedin.md`](./apis/linkedin.md) | Community Management API (`organization`) + Voyager API (`personal`). |
 | Binance (Cripto) | [`apis/binance.md`](./apis/binance.md) | Binance Public Market API v3 (`/api/v3/ticker/24hr` en USD/USDT y EUR sin tokens). |
-| Keycounter | [`apis/keycounter.md`](./apis/keycounter.md) | API v2 `api.raupulus.dev/api/v2/keycounter/stats` con Bearer token (pulsaciones y clics). |
+| Keycounter | [`apis/keycounter.md`](./apis/keycounter.md) | API v2 privada (`KEYCOUNTER_API_URL`) con Bearer token (pulsaciones y clics). |
 
 ---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

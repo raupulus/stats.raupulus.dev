@@ -1,4 +1,4 @@
-"""Keycounter collector (keystrokes and mouse clicks) via api.raupulus.dev API v2."""
+"""Keycounter collector (keystrokes and mouse clicks) via external Keycounter API v2."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from social_stats.models.enums import Platform
 from social_stats.models.metrics import AccountMetrics
 from social_stats.storage.snapshot_repo import SnapshotRepository
 
-DEFAULT_KEYCOUNTER_API_URL = "https://api.raupulus.dev/api/v2/keycounter/stats"
+DEFAULT_KEYCOUNTER_API_URL = "https://api.example.com/api/v2/keycounter/stats"
 
 
 def _parse_int(value: Any) -> int | None:
@@ -33,7 +33,7 @@ def _parse_int(value: Any) -> int | None:
 class KeycounterCollector(BaseCollector):
     """
     Collects keyboard pulsations and mouse clicks (lifetime, today, last hour)
-    from GET https://api.raupulus.dev/api/v2/keycounter/stats using Bearer token auth.
+    from the configured Keycounter API v2 endpoint using Bearer token auth.
     """
 
     platform = Platform.KEYCOUNTER

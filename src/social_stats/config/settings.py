@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     tiktok_client_secret: str = ""
     linkedin_access_token: str = ""
     linkedin_li_at_cookie: str = ""
-    keycounter_api_url: str = "https://api.raupulus.dev/api/v2/keycounter/stats"
+    keycounter_api_url: str = "https://api.example.com/api/v2/keycounter/stats"
     keycounter_api_token: str = ""
 
     @property

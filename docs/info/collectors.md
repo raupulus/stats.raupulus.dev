@@ -14,7 +14,7 @@ Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección as�
   - `BlueskyCollector` (`bluesky.py`): consulta batch de perfiles (`getProfiles`) y último post original (`getAuthorFeed` descartando reposts).
   - `MastodonCollector` (`mastodon.py`): consulta pública multi-instancia (`accounts/lookup` + `statuses`) con aislamiento de errores por instancia.
   - `CryptoCollector` (`crypto.py`): consulta batch de cotizaciones spot y estadísticas 24h en dólares (`USDT`) y euros (`EUR`) mediante Binance Public Market API (`/api/v3/ticker/24hr`) sin tokens.
-  - `KeycounterCollector` (`keycounter.py`): consulta de pulsaciones de teclas y clics de ratón (totales históricos, hoy y última hora) contra `GET https://api.raupulus.dev/api/v2/keycounter/stats` con autenticación `Authorization: Bearer <TOKEN>`.
+  - `KeycounterCollector` (`keycounter.py`): consulta de pulsaciones de teclas y clics de ratón (totales históricos, hoy y última hora) contra el endpoint configurado en `KEYCOUNTER_API_URL` (`https://api.example.com/api/v2/keycounter/stats` por defecto) con autenticación `Authorization: Bearer <TOKEN>`.
 - Implementa los colectores de Nivel 2 (arquitectura dual con fallback):
   - `TwitterCollector` (`twitter.py`): Nivel A Syndication API (`followbutton/info.json` + `timeline-profile`) y Nivel B GraphQL con cookies Read-Only opcionales.
   - `InstagramCollector` (`instagram.py`): Nivel A Meta Graph API con System User Token permanente en cabecera `Authorization: Bearer <TOKEN>` y Nivel B fallback `web_profile_info` con `curl_cffi`.
@@ -60,8 +60,8 @@ Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección as�
 | `TWITTER_AUTH_TOKEN_COOKIE` / `TWITTER_CT0_COOKIE` | `str` | `""` | Cookies opcionales Read-Only para Nivel B de `TwitterCollector` |
 | `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET` | `str` | `""` | Credenciales opcionales Display API v2 para `TikTokCollector` |
 | `LINKEDIN_ACCESS_TOKEN` / `LINKEDIN_LI_AT_COOKIE` | `str` | `""` | Credenciales opcionales para `LinkedInCollector` |
-| `KEYCOUNTER_API_TOKEN` | `str` | `""` | Token Bearer para `KeycounterCollector` (`api.raupulus.dev`) |
-| `KEYCOUNTER_API_URL` | `str` | `"https://api.raupulus.dev/api/v2/keycounter/stats"` | Endpoint de `KeycounterCollector` |
+| `KEYCOUNTER_API_TOKEN` | `str` | `""` | Token Bearer para `KeycounterCollector` |
+| `KEYCOUNTER_API_URL` | `str` | `"https://api.example.com/api/v2/keycounter/stats"` | Endpoint de `KeycounterCollector` |
 
 ---
 
