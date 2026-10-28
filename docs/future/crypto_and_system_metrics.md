@@ -52,3 +52,7 @@ Documento de notas para futuras integraciones a mostrar en la pantalla de escrit
   - `psutil.disk_usage('/')`
   - `psutil.boot_time()`
 - Puede integrarse limpiamente como un colector desacoplado (`SystemMetricsCollector`) dentro del mismo bucle de `BaseCollector`, emitiendo sus actualizaciones hacia la API REST y WebSockets en un canal o perfil específico de sistema (ej. `profile="system"` o `/api/v1/system/metrics`).
+
+---
+> Creado: 2026-10-28 · Última revisión: 2026-10-28
+

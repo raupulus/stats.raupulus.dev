@@ -1,0 +1,54 @@
+# Decisiones Técnicas y Arquitectónicas
+
+Registro de decisiones técnicas deliberadas del proyecto. Este documento previene que decisiones conscientes de diseño sean revertidas o «arregladas» erróneamente en el futuro.
+
+---
+
+## DT-001: Consumo Estrictamente Unidireccional y de Solo Lectura (Read-Only)
+- **Fecha:** 2026-10-28
+- **Decisión:** Los clientes (dashboards de escritorio, pantallas, overlays) únicamente leen datos mediante peticiones `GET` en la API REST o escuchan eventos pasivos a través de WebSockets.
+- **Motivo:** Evitar vectores de ataque, riesgos de seguridad en red/VPN y complejidad de sincronización bidireccional.
+- **Consecuencia:** Queda prohibido exponer endpoints de mutación (`POST`, `PUT`, `DELETE`, `PATCH`). El servidor WebSocket ignora cualquier payload enviado por el cliente tras el handshake inicial.
+
+---
+
+## DT-002: Modelo de Agrupación por Perfiles y Arquitectura Multicanal
+- **Fecha:** 2026-10-28
+- **Decisión:** Todas las plataformas deben soportar múltiples canales o cuentas (ej. varios canales de YouTube), agrupables bajo identidades lógicas denominadas «Perfiles» (ej. `raupulus`, `proyecto_secundario`).
+- **Motivo:** Permitir monitorizar proyectos independientes y perfiles personales desde una misma instancia centralizada, pudiendo solicitar estadísticas globales o filtradas por perfil.
+- **Consecuencia:** La configuración declarativa (`profiles.yaml`) define los perfiles. La API REST y los WebSockets admiten filtrado específico por `profile_id`. En WebSockets, la suscripción por perfil se establece en el handshake HTTP de conexión sin requerir mensajes entrantes posteriores.
+
+---
+
+## DT-003: Operación Desatendida sin Re-Autenticación Manual Periódica
+- **Fecha:** 2026-10-28
+- **Decisión:** Ningún colector puede depender de flujos de login interactivos que caduquen en períodos cortos (ej. tokens OAuth de 7 o 60 días sin renovación automática desatendida).
+- **Motivo:** El sistema debe operar 24/7 en un servidor externo sin requerir atención humana continua.
+- **Consecuencia:** Se priorizan API Keys permanentes (Google Cloud Data API v3 para YouTube), APIs abiertas sin autenticación (Bluesky AT Protocol, Mastodon REST API), System User Tokens sin caducidad (Meta Graph API para Instagram) o endpoints públicos de sindicación y extracción con caché.
+
+---
+
+## DT-004: Cálculo de Métricas Temporales mediante Snapshots Locales Periódicos
+- **Fecha:** 2026-10-28
+- **Decisión:** Las métricas de variación («visitas última hora», «visitas último día», «seguidores último día») se calculan localmente mediante series temporales de snapshots en base de datos local (SQLite WAL) en lugar de consultar APIs analíticas externas.
+- **Motivo:** Las APIs externas públicas solo devuelven contadores acumulados totales y las APIs de analítica avanzada sufren retrasos de hasta 48 horas y cuotas prohibitivas.
+- **Consecuencia:** El motor almacena periódicamente el contador global acumulado y calcula los diferenciales matemáticos ($\Delta_{1h}$ y $\Delta_{24h}$) al vuelo en el servidor.
+
+---
+
+## DT-005: Preservación de Estado en Memoria y Modo Stale ante Errores Externos
+- **Fecha:** 2026-10-28
+- **Decisión:** Si un colector externo sufre un fallo de red o rate limit, el sistema no bloquea a los demás colectores ni tumba la API. Continúa respondiendo con el último valor válido en caché marcando el estado como `stale`.
+- **Motivo:** Garantizar alta disponibilidad y evitar que caídas puntuales de una red social rompan la visualización en la pantalla de escritorio.
+- **Consecuencia:** Todos los modelos de datos de métricas deben soportar el estado del colector (`healthy`, `stale`, `error`, `disabled`) y metadatos del último refresco exitoso.
+
+---
+
+## DT-006: Postergación de Métricas Locales / Pulsaciones de Teclas (Keystrokes)
+- **Fecha:** 2026-10-28
+- **Decisión:** La integración de pulsaciones de teclas (keystrokes) queda pospuesta hasta que las redes sociales estén cerradas y estables. Cuando se aborde, el servidor consumirá los datos directamente desde una base de datos externa acordada sin abrir endpoints de recepción en red.
+- **Motivo:** Mantener el foco en las fuentes sociales y evitar diseños anómalos que violen el principio de solo lectura.
+- **Consecuencia:** No se programan ni modelan endpoints de captura de pulsaciones en la API actual.
+
+---
+> Creado: 2026-10-28 · Última revisión: 2026-10-28
