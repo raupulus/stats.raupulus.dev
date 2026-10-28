@@ -28,11 +28,11 @@ Bienvenido a la documentación técnica **viva** del proyecto. Este directorio c
 
 | Módulo | Archivo | Descripción |
 |---|---|---|
-| `config` | [`config.md`](./config.md) | Configuración de variables de entorno (`.env`) y cargador/validador declarativo de `config/profiles.yaml`. |
+| `config` | [`config.md`](./config.md) | Configuración de variables de entorno (`.env`) y cargador/validador declarativo de `config/profiles.json` y `config/profiles.yaml` (`enable`, `interval_minutes`). |
 | `models` | [`models.md`](./models.md) | Modelos Pydantic v2 de métricas, estados, perfiles, respuestas REST y eventos WebSocket. |
 | `storage` | [`storage.md`](./storage.md) | Base de datos SQLite WAL, motor de snapshots ($\Delta_{1h}$, $\Delta_{24h}$), `StateStore` en memoria y `DiffEngine`. |
 | `services` | [`services.md`](./services.md) | Agregador multiperfil (`ProfileAggregator`), planificador (`CollectorScheduler`) y gestor WebSocket (`WSManager`). |
-| `collectors` | [`collectors.md`](./collectors.md) | Clase base `BaseCollector` y proveedores de recolección por red social. |
+| `collectors` | [`collectors.md`](./collectors.md) | Clase base `BaseCollector` y los 9 proveedores de recolección (redes sociales, cripto y keycounter). |
 | `api` / `main` | [`api.md`](./api.md) | Servidor FastAPI Read-Only, endpoints REST (`/api/v1/*`) y streaming WebSocket (`/ws/*`). |
 
 
@@ -50,6 +50,7 @@ Bienvenido a la documentación técnica **viva** del proyecto. Este directorio c
 | TikTok | [`apis/tiktok.md`](./apis/tiktok.md) | Hidratación SSR `__UNIVERSAL_DATA_FOR_REHYDRATION__` + Display API v2 auto-refresh. |
 | LinkedIn | [`apis/linkedin.md`](./apis/linkedin.md) | Community Management API (`organization`) + Voyager API (`personal`). |
 | Binance (Cripto) | [`apis/binance.md`](./apis/binance.md) | Binance Public Market API v3 (`/api/v3/ticker/24hr` en USD/USDT y EUR sin tokens). |
+| Keycounter | [`apis/keycounter.md`](./apis/keycounter.md) | API v2 `api.raupulus.dev/api/v2/keycounter/stats` con Bearer token (pulsaciones y clics). |
 
 ---
 > Creado: 2026-10-28 · Última revisión: 2026-10-28

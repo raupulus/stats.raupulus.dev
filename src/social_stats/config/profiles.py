@@ -1,7 +1,8 @@
-"""Loader and validator for declarative multi-profile configuration (profiles.yaml)."""
+"""Loader and validator for declarative multi-profile configuration (profiles.json / profiles.yaml)."""
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 from typing import Any, Literal
@@ -19,6 +20,9 @@ CRYPTO_ALIASES: dict[str, str] = {
     "solana": "sol",
     "ripple": "xrp",
 }
+PLATFORM_ALIASES: dict[str, str] = {
+    "keystrokes": "keycounter",
+}
 SUPPORTED_PLATFORMS: frozenset[str] = frozenset(
     {
         "youtube",
@@ -29,12 +33,30 @@ SUPPORTED_PLATFORMS: frozenset[str] = frozenset(
         "tiktok",
         "linkedin",
         "crypto",
+        "keycounter",
     }
 )
 
 
+def _normalize_enable_and_interval_fields(data: Any) -> Any:
+    """Normalize 'enable' -> 'enabled' and 'poll_interval_minutes'/'interval' -> 'interval_minutes'."""
+    if not isinstance(data, dict):
+        return data
+    normalized = dict(data)
+    if "enable" in normalized:
+        enable_val = normalized.pop("enable")
+        if "enabled" not in normalized:
+            normalized["enabled"] = enable_val
+    for alias in ("poll_interval_minutes", "interval"):
+        if alias in normalized:
+            interval_val = normalized.pop(alias)
+            if "interval_minutes" not in normalized:
+                normalized["interval_minutes"] = interval_val
+    return normalized
+
+
 class AccountConfig(BaseModel):
-    """Configuration for a single social media account or channel."""
+    """Configuration for a single social media account, channel, crypto asset, or keycounter."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -45,12 +67,30 @@ class AccountConfig(BaseModel):
     credentials_ref: str = "MAIN"
     account_type: Literal["personal", "organization"] = "personal"
     enabled: bool = True
+    interval_minutes: float | None = Field(default=None, gt=0)
     platform: str = ""
     account_key: str = ""
 
+    @model_validator(mode="before")
+    @classmethod
+    def _preprocess_aliases(cls, data: Any) -> Any:
+        return _normalize_enable_and_interval_fields(data)
+
+    @property
+    def enable(self) -> bool:
+        """Alias for enabled."""
+        return self.enabled
+
+    def get_poll_interval_seconds(self, default_seconds: int) -> int:
+        """Return effective polling interval in seconds for this account."""
+        if self.interval_minutes is not None and self.interval_minutes > 0:
+            return max(5, int(round(self.interval_minutes * 60)))
+        return default_seconds
+
     def compute_account_key(self, platform: str) -> str:
         """Validate platform-specific fields and compute deterministic account_key."""
-        norm_platform = platform.strip().lower()
+        raw_p = platform.strip().lower()
+        norm_platform = PLATFORM_ALIASES.get(raw_p, raw_p)
         if norm_platform not in SUPPORTED_PLATFORMS:
             raise ValueError(f"Unsupported platform '{platform}'")
 
@@ -93,6 +133,14 @@ class AccountConfig(BaseModel):
                 )
             return normalized_symbol
 
+        if norm_platform == "keycounter":
+            raw_kc = (clean_handle or clean_id or self.credentials_ref or "main").lstrip("@").lower()
+            if not raw_kc:
+                raise ValueError(
+                    "Keycounter account requires a non-empty 'handle', 'id', or 'credentials_ref'"
+                )
+            return raw_kc
+
         normalized_handle = clean_handle.lstrip("@").lower()
         if not normalized_handle:
             raise ValueError(f"Platform '{norm_platform}' account requires a non-empty 'handle'")
@@ -107,21 +155,39 @@ class ProfileConfig(BaseModel):
     profile_id: str = ""
     name: str = Field(..., min_length=1)
     description: str | None = None
+    enabled: bool = True
+    interval_minutes: float | None = Field(default=None, gt=0)
     accounts: dict[str, list[AccountConfig]] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _preprocess_aliases(cls, data: Any) -> Any:
+        return _normalize_enable_and_interval_fields(data)
+
+    @property
+    def enable(self) -> bool:
+        """Alias for enabled."""
+        return self.enabled
 
     @model_validator(mode="after")
     def validate_and_normalize_accounts(self) -> ProfileConfig:
         """Validate platforms, compute account_key for each account, and reject duplicates."""
         normalized_accounts: dict[str, list[AccountConfig]] = {}
         for raw_platform, account_list in self.accounts.items():
-            platform = raw_platform.strip().lower()
+            raw_p = raw_platform.strip().lower()
+            platform = PLATFORM_ALIASES.get(raw_p, raw_p)
             if platform not in SUPPORTED_PLATFORMS:
                 raise ValueError(
                     f"Unsupported platform '{raw_platform}'. "
                     f"Allowed: {sorted(SUPPORTED_PLATFORMS)}"
                 )
             seen_keys: set[str] = set()
-            processed_list: list[AccountConfig] = []
+            processed_list: list[AccountConfig] = dict.get(normalized_accounts, platform, [])
+            if processed_list:
+                seen_keys.update(a.account_key for a in processed_list)
+            else:
+                processed_list = []
+
             for acc in account_list:
                 key = acc.compute_account_key(platform)
                 if key in seen_keys:
@@ -130,7 +196,20 @@ class ProfileConfig(BaseModel):
                         f"'{self.profile_id or self.name}'"
                     )
                 seen_keys.add(key)
-                updated_acc = acc.model_copy(update={"platform": platform, "account_key": key})
+                effective_enabled = acc.enabled and self.enabled
+                effective_interval = (
+                    acc.interval_minutes
+                    if acc.interval_minutes is not None
+                    else self.interval_minutes
+                )
+                updated_acc = acc.model_copy(
+                    update={
+                        "platform": platform,
+                        "account_key": key,
+                        "enabled": effective_enabled,
+                        "interval_minutes": effective_interval,
+                    }
+                )
                 processed_list.append(updated_acc)
             normalized_accounts[platform] = processed_list
         self.accounts = normalized_accounts
@@ -138,7 +217,7 @@ class ProfileConfig(BaseModel):
 
 
 class ProfilesRegistry(BaseModel):
-    """Root configuration model representing config/profiles.yaml."""
+    """Root configuration model representing config/profiles.json or config/profiles.yaml."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -168,7 +247,11 @@ class ProfilesRegistry(BaseModel):
     def get_unique_accounts_by_platform(
         self, *, only_enabled: bool = True
     ) -> dict[str, list[AccountConfig]]:
-        """Deduplicate accounts across all profiles by (platform, account_key)."""
+        """
+        Deduplicate accounts across all profiles by (platform, account_key).
+        When the same account is present in multiple profiles, merges enabled status
+        and keeps the shortest configured interval_minutes.
+        """
         result: dict[str, dict[str, AccountConfig]] = {}
         for profile in self.profiles.values():
             for platform, accounts in profile.accounts.items():
@@ -178,22 +261,51 @@ class ProfilesRegistry(BaseModel):
                     platform_bucket = result.setdefault(platform, {})
                     if acc.account_key not in platform_bucket:
                         platform_bucket[acc.account_key] = acc
+                    else:
+                        existing = platform_bucket[acc.account_key]
+                        merged_enabled = existing.enabled or acc.enabled
+                        if existing.interval_minutes is not None and acc.interval_minutes is not None:
+                            merged_interval: float | None = min(
+                                existing.interval_minutes, acc.interval_minutes
+                            )
+                        else:
+                            merged_interval = (
+                                existing.interval_minutes
+                                if existing.interval_minutes is not None
+                                else acc.interval_minutes
+                            )
+                        platform_bucket[acc.account_key] = existing.model_copy(
+                            update={
+                                "enabled": merged_enabled,
+                                "interval_minutes": merged_interval,
+                            }
+                        )
         return {platform: list(bucket.values()) for platform, bucket in result.items()}
 
 
 def load_profiles_config(path: Path | str) -> ProfilesRegistry:
-    """Load, parse, and validate profiles configuration from a YAML file."""
+    """Load, parse, and validate profiles configuration from a JSON or YAML file."""
     file_path = Path(path)
     if not file_path.exists():
         raise FileNotFoundError(f"Profiles configuration file not found: {file_path}")
 
     raw_text = file_path.read_text(encoding="utf-8")
-    try:
-        data: Any = yaml.safe_load(raw_text)
-    except yaml.YAMLError as exc:
-        raise ValueError(f"Malformed YAML in {file_path}: {exc}") from exc
+    is_json = file_path.suffix.lower() == ".json"
+
+    if is_json:
+        try:
+            data: Any = json.loads(raw_text)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Malformed JSON in {file_path}: {exc}") from exc
+    else:
+        try:
+            data = yaml.safe_load(raw_text)
+        except yaml.YAMLError as exc:
+            raise ValueError(f"Malformed YAML in {file_path}: {exc}") from exc
 
     if not isinstance(data, dict):
-        raise ValueError(f"Invalid root structure in {file_path}: expected a YAML mapping")
+        raise ValueError(
+            f"Invalid root structure in {file_path}: expected a JSON object / YAML mapping"
+        )
 
     return ProfilesRegistry.model_validate(data)

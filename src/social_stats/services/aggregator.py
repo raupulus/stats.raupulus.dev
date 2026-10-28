@@ -15,6 +15,8 @@ from social_stats.models.api import (
     CryptoAssetPrice,
     CryptoPricesResponse,
     GlobalStatsResponse,
+    KeycounterAccountStats,
+    KeycounterStatsResponse,
     ProfileCatalogItem,
     ProfilesCatalogResponse,
 )
@@ -114,6 +116,24 @@ class ProfileAggregator:
         views_last_1h = _sum_nullable_ints(
             [st.metrics.views_last_1h for st in source_states]
         )
+        pulsations_total = _sum_nullable_ints(
+            [st.metrics.pulsations_total for st in source_states]
+        )
+        pulsations_today = _sum_nullable_ints(
+            [st.metrics.pulsations_today for st in source_states]
+        )
+        pulsations_last_1h = _sum_nullable_ints(
+            [st.metrics.pulsations_last_1h for st in source_states]
+        )
+        clicks_total = _sum_nullable_ints(
+            [st.metrics.clicks_total for st in source_states]
+        )
+        clicks_today = _sum_nullable_ints(
+            [st.metrics.clicks_today for st in source_states]
+        )
+        clicks_last_1h = _sum_nullable_ints(
+            [st.metrics.clicks_last_1h for st in source_states]
+        )
 
         status = compute_platform_status(account_states)
 
@@ -127,6 +147,12 @@ class ProfileAggregator:
             views_total=views_total,
             views_last_24h=views_last_24h,
             views_last_1h=views_last_1h,
+            pulsations_total=pulsations_total,
+            pulsations_today=pulsations_today,
+            pulsations_last_1h=pulsations_last_1h,
+            clicks_total=clicks_total,
+            clicks_today=clicks_today,
+            clicks_last_1h=clicks_last_1h,
             accounts=account_states,
         )
 
@@ -316,3 +342,44 @@ class ProfileAggregator:
             )
 
         return CryptoPricesResponse(generated_at=ts, assets=assets)
+
+    def get_keycounter_stats(
+        self,
+        *,
+        account_filter: str | None = None,
+        now: datetime | None = None,
+    ) -> KeycounterStatsResponse:
+        """Build KeycounterStatsResponse across all configured keycounter accounts."""
+        ts = now if now is not None else datetime.now(UTC)
+        unique_kc = self.registry.get_unique_accounts_by_platform(
+            only_enabled=True
+        ).get(Platform.KEYCOUNTER.value, [])
+
+        norm_filter = (
+            account_filter.strip().lstrip("@").lower()
+            if account_filter is not None
+            else None
+        )
+
+        accounts_out: dict[str, KeycounterAccountStats] = {}
+        for acc_cfg in unique_kc:
+            if norm_filter is not None and acc_cfg.account_key != norm_filter:
+                continue
+            state = self._resolve_account_state(Platform.KEYCOUNTER, acc_cfg)
+            m = state.metrics
+            accounts_out[acc_cfg.account_key] = KeycounterAccountStats(
+                account_key=acc_cfg.account_key,
+                handle=state.handle,
+                label=state.label,
+                status=state.status,
+                last_updated_at=state.last_updated_at,
+                error_message=state.error_message,
+                pulsations_total=m.pulsations_total,
+                pulsations_today=m.pulsations_today,
+                pulsations_last_1h=m.pulsations_last_1h,
+                clicks_total=m.clicks_total,
+                clicks_today=m.clicks_today,
+                clicks_last_1h=m.clicks_last_1h,
+            )
+
+        return KeycounterStatsResponse(generated_at=ts, accounts=accounts_out)

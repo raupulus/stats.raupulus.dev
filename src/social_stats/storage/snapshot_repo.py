@@ -185,6 +185,10 @@ class SnapshotRepository:
             extra_data["price_usd"] = metrics.price_usd
         if metrics.price_eur is not None:
             extra_data["price_eur"] = metrics.price_eur
+        if metrics.pulsations_total is not None:
+            extra_data["pulsations_total"] = metrics.pulsations_total
+        if metrics.clicks_total is not None:
+            extra_data["clicks_total"] = metrics.clicks_total
         extra_json = json.dumps(extra_data) if extra_data else None
         await self.db.execute_write(
             """
@@ -268,6 +272,8 @@ class SnapshotRepository:
         for row in rows:
             price_usd: float | None = None
             price_eur: float | None = None
+            pulsations_total: int | None = None
+            clicks_total: int | None = None
             raw_extra = row["extra_json"]
             if raw_extra:
                 try:
@@ -277,6 +283,10 @@ class SnapshotRepository:
                             price_usd = float(extra_dict["price_usd"])
                         if extra_dict.get("price_eur") is not None:
                             price_eur = float(extra_dict["price_eur"])
+                        if extra_dict.get("pulsations_total") is not None:
+                            pulsations_total = int(extra_dict["pulsations_total"])
+                        if extra_dict.get("clicks_total") is not None:
+                            clicks_total = int(extra_dict["clicks_total"])
                 except (ValueError, TypeError):
                     pass
             points.append(
@@ -288,6 +298,8 @@ class SnapshotRepository:
                     latest_post_views=row["latest_post_views"],
                     price_usd=price_usd,
                     price_eur=price_eur,
+                    pulsations_total=pulsations_total,
+                    clicks_total=clicks_total,
                 )
             )
         return points

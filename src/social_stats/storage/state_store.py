@@ -19,6 +19,12 @@ TOP_LEVEL_METRIC_FIELDS: tuple[str, ...] = (
     "views_total",
     "views_last_24h",
     "views_last_1h",
+    "pulsations_total",
+    "pulsations_today",
+    "pulsations_last_1h",
+    "clicks_total",
+    "clicks_today",
+    "clicks_last_1h",
 )
 
 CRYPTO_METRIC_FIELDS: tuple[str, ...] = (

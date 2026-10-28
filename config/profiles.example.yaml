@@ -3,78 +3,102 @@ version: "1.0"
 profiles:
   raupulus:
     name: "Perfil Personal (raupulus)"
-    description: "Redes sociales principales y canales de contenido personal"
+    description: "Redes sociales principales, canales de contenido, keycounter y cripto"
+    enable: true
     accounts:
       youtube:
         - id: "UCxxxxxxxxxxxxxxxxxxxxxx"
           handle: "@raupulus"
           label: "Canal Principal"
-          enabled: true
+          enable: true
+          interval_minutes: 5
         - id: "UCyyyyyyyyyyyyyyyyyyyyyy"
           handle: "@raupulus_live"
           label: "Canal Secundario / Directos"
-          enabled: true
+          enable: true
+          interval_minutes: 10
 
       twitter:
         - handle: "raupulus"
           label: "X / Twitter Personal"
-          enabled: true
+          enable: true
+          interval_minutes: 10
 
       instagram:
         - handle: "raupulus"
           label: "Instagram Personal"
           credentials_ref: "MAIN"
-          enabled: true
+          enable: true
+          interval_minutes: 15
 
       bluesky:
         - handle: "raupulus.dev"
           label: "Bluesky Personal"
-          enabled: true
+          enable: true
+          interval_minutes: 2
 
       mastodon:
         - instance: "mastodon.social"
           handle: "raupulus"
           label: "Mastodon Principal"
-          enabled: true
+          enable: true
+          interval_minutes: 3
 
       tiktok:
         - handle: "raupulus"
           label: "TikTok Personal"
-          enabled: true
+          enable: true
+          interval_minutes: 15
 
       linkedin:
         - handle: "raupulus"
           account_type: "personal"
           label: "LinkedIn Personal"
-          enabled: false
+          enable: false
+          interval_minutes: 60
+
+      keycounter:
+        - handle: "raupulus"
+          label: "Keycounter Principal (Teclado + Ratón)"
+          credentials_ref: "MAIN"
+          enable: true
+          interval_minutes: 1
 
       crypto:
         - handle: "BTC"
           label: "Bitcoin (BTC)"
-          enabled: true
+          enable: true
+          interval_minutes: 1
         - handle: "ADA"
           label: "Cardano (ADA)"
-          enabled: true
+          enable: true
+          interval_minutes: 1
 
   proyecto_secundario:
     name: "Proyecto Secundario"
     description: "Métricas de redes del proyecto secundario"
+    enable: true
+    interval_minutes: 15
     accounts:
       youtube:
         - id: "UCzzzzzzzzzzzzzzzzzzzzzz"
           handle: "@proyecto_secundario"
           label: "Canal del Proyecto"
-          enabled: true
+          enable: true
+          interval_minutes: 15
       twitter:
         - handle: "proyecto_sec"
           label: "Twitter del Proyecto"
-          enabled: true
+          enable: true
+          interval_minutes: 15
       bluesky:
         - handle: "proyecto.bsky.social"
           label: "Bluesky del Proyecto"
-          enabled: true
+          enable: true
+          interval_minutes: 5
       mastodon:
         - instance: "fosstodon.org"
           handle: "proyecto"
           label: "Mastodon del Proyecto"
-          enabled: true
+          enable: true
+          interval_minutes: 5

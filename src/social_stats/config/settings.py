@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     app_host: str = "0.0.0.0"
     app_port: int = Field(default=8000, ge=1, le=65535)
     log_level: str = "INFO"
-    profiles_config_path: Path = Path("config/profiles.yaml")
+    profiles_config_path: Path = Path("config/profiles.json")
     sqlite_db_path: Path = Path("data/stats.db")
     cors_allowed_origins: str = "*"
 
@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     poll_interval_tiktok: int = Field(default=900, ge=10)
     poll_interval_linkedin: int = Field(default=3600, ge=10)
     poll_interval_crypto: int = Field(default=60, ge=10)
+    poll_interval_keycounter: int = Field(default=60, ge=10)
 
     # SQLite snapshot retention
     snapshot_retention_days: int = Field(default=30, ge=1)
@@ -52,6 +53,8 @@ class Settings(BaseSettings):
     tiktok_client_secret: str = ""
     linkedin_access_token: str = ""
     linkedin_li_at_cookie: str = ""
+    keycounter_api_url: str = "https://api.raupulus.dev/api/v2/keycounter/stats"
+    keycounter_api_token: str = ""
 
     @property
     def cors_origins_list(self) -> list[str]:
@@ -79,6 +82,21 @@ class Settings(BaseSettings):
         user_id = os.getenv(f"IG_{ref_clean}_USER_ID", "").strip()
         token = os.getenv(f"IG_{ref_clean}_ACCESS_TOKEN", "").strip()
         return user_id, token
+
+    def get_keycounter_token(self, credentials_ref: str = "MAIN") -> str:
+        """Resolve Keycounter Bearer token dynamically by credentials_ref."""
+        ref_clean = credentials_ref.strip().upper() or "MAIN"
+        if ref_clean == "MAIN":
+            token = (
+                self.keycounter_api_token
+                or os.getenv("KEYCOUNTER_API_TOKEN", "")
+                or os.getenv("KEYCOUNTER_MAIN_API_TOKEN", "")
+            )
+            return token.strip()
+        specific = os.getenv(f"KEYCOUNTER_{ref_clean}_API_TOKEN", "").strip()
+        if specific:
+            return specific
+        return self.keycounter_api_token.strip()
 
 
 @lru_cache(maxsize=1)

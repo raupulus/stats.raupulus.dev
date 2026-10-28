@@ -8,10 +8,10 @@ Capa de persistencia histórica en SQLite (`WAL`), motor matemático de cálculo
 
 ### 1.1. Qué hace
 - Gestiona la conexión asíncrona a SQLite (`Database`) activando `PRAGMA journal_mode=WAL;` y `PRAGMA synchronous=NORMAL;`.
-- Almacena snapshots periódicos en `metric_snapshots` (incluyendo cotizaciones `price_usd` y `price_eur` en `extra_json`), el último estado conocido en `account_latest_state` y tokens auto-renovables en `auth_tokens`.
+- Almacena snapshots periódicos en `metric_snapshots` (incluyendo cotizaciones `price_usd`/`price_eur` y contadores `pulsations_total`/`clicks_total` en `extra_json`), el último estado conocido en `account_latest_state` y tokens auto-renovables en `auth_tokens`.
 - Calcula $\Delta_{1h}$ (`views_last_1h`) y $\Delta_{24h}$ (`views_last_24h`, `followers_last_24h`) en `SnapshotRepository` soportando estado nominal, arranque en frío (*warm-up*) y protección frente a paradas prolongadas.
 - Mantiene en memoria (`StateStore`) el estado actual de todas las cuentas para lecturas $O(1)$ y preserva métricas previas con estado `stale` cuando ocurre un fallo de recolección.
-- Calcula diferencias granulares entre lecturas consecutivas mediante `DiffEngine` (tanto contadores enteros como precios cripto `float`), detectando publicaciones nuevas (`is_new_latest_post = True`) sin producir deltas negativos.
+- Calcula diferencias granulares entre lecturas consecutivas mediante `DiffEngine` (tanto contadores enteros sociales, pulsaciones/clics de `keycounter`, como precios cripto `float`), detectando publicaciones nuevas (`is_new_latest_post = True`) sin producir deltas negativos.
 
 ### 1.2. Qué NO hace
 - No agrupa cuentas por perfil lógico (responsabilidad de `ProfileAggregator` en `services`).

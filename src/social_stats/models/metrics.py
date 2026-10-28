@@ -43,6 +43,12 @@ class AccountMetrics(BaseModel):
     low_24h_usd: float | None = None
     high_24h_eur: float | None = None
     low_24h_eur: float | None = None
+    pulsations_total: int | None = None
+    pulsations_today: int | None = None
+    pulsations_last_1h: int | None = None
+    clicks_total: int | None = None
+    clicks_today: int | None = None
+    clicks_last_1h: int | None = None
 
 
 class AccountState(BaseModel):
@@ -71,6 +77,12 @@ class PlatformSummary(BaseModel):
     views_total: int | None = None
     views_last_24h: int | None = None
     views_last_1h: int | None = None
+    pulsations_total: int | None = None
+    pulsations_today: int | None = None
+    pulsations_last_1h: int | None = None
+    clicks_total: int | None = None
+    clicks_today: int | None = None
+    clicks_last_1h: int | None = None
     accounts: list[AccountState] = Field(default_factory=list)
 
 

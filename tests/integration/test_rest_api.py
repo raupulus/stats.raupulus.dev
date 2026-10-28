@@ -94,6 +94,29 @@ async def seeded_api_app(
         now=now,
     )
 
+    m_kc = AccountMetrics(
+        pulsations_total=12_845_620,
+        pulsations_today=15_420,
+        pulsations_last_1h=1_850,
+        clicks_total=450_120,
+        clicks_today=1_200,
+        clicks_last_1h=150,
+        window_1h_complete=True,
+        window_24h_complete=True,
+    )
+    await snapshot_repo.insert_snapshot(
+        Platform.KEYCOUNTER,
+        "raupulus",
+        m_kc,
+        timestamp=now_ts,
+    )
+    await state_store.update_account_success(
+        Platform.KEYCOUNTER,
+        "raupulus",
+        m_kc,
+        now=now,
+    )
+
     app = create_app(
         settings=Settings(),
         registry=sample_registry,
@@ -238,3 +261,28 @@ async def test_crypto_prices_endpoint(seeded_api_app: httpx.AsyncClient) -> None
     not_found = await seeded_api_app.get("/api/v1/crypto", params={"symbol": "DOGE"})
     assert not_found.status_code == 404
     assert not_found.json()["error"] == "crypto_symbol_not_found"
+
+
+async def test_keycounter_stats_endpoint(seeded_api_app: httpx.AsyncClient) -> None:
+    """Verify GET /api/v1/keycounter returns keystrokes and clicks and supports ?account=."""
+    resp = await seeded_api_app.get("/api/v1/keycounter")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "raupulus" in data["accounts"]
+    kc = data["accounts"]["raupulus"]
+    assert kc["pulsations_total"] == 12_845_620
+    assert kc["pulsations_today"] == 15_420
+    assert kc["pulsations_last_1h"] == 1_850
+    assert kc["clicks_total"] == 450_120
+    assert kc["clicks_today"] == 1_200
+    assert kc["clicks_last_1h"] == 150
+
+    # Filter by ?account=raupulus
+    filtered = await seeded_api_app.get("/api/v1/keycounter", params={"account": "@raupulus"})
+    assert filtered.status_code == 200
+    assert list(filtered.json()["accounts"].keys()) == ["raupulus"]
+
+    # Unknown account -> 404
+    not_found = await seeded_api_app.get("/api/v1/keycounter", params={"account": "inexistente"})
+    assert not_found.status_code == 404
+    assert not_found.json()["error"] == "keycounter_account_not_found"

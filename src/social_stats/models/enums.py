@@ -6,7 +6,7 @@ from enum import StrEnum
 
 
 class Platform(StrEnum):
-    """Supported social media and market data platforms."""
+    """Supported social media, market data, and activity telemetry platforms."""
 
     YOUTUBE = "youtube"
     TWITTER = "twitter"
@@ -16,6 +16,7 @@ class Platform(StrEnum):
     TIKTOK = "tiktok"
     LINKEDIN = "linkedin"
     CRYPTO = "crypto"
+    KEYCOUNTER = "keycounter"
 
 
 class CollectorStatus(StrEnum):

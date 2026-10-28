@@ -13,6 +13,7 @@ from social_stats.models.api import (
     AccountHistorySeries,
     CryptoPricesResponse,
     GlobalStatsResponse,
+    KeycounterStatsResponse,
     ProfileHistoryResponse,
     ProfilesCatalogResponse,
 )
@@ -86,6 +87,29 @@ async def get_crypto_prices(
                 "error": "crypto_symbol_not_found",
                 "message": f"El activo cripto '{symbol}' no está configurado",
                 "available_symbols": list(all_crypto.assets.keys()),
+            },
+        )
+    return response
+
+
+@router.get("/keycounter", response_model=KeycounterStatsResponse)
+async def get_keycounter_stats(
+    request: Request,
+    account: str | None = Query(
+        default=None, description="Optional keycounter account_key filter"
+    ),
+) -> KeycounterStatsResponse | JSONResponse:
+    """Return keystroke and click statistics for configured keycounter accounts."""
+    aggregator = cast(ProfileAggregator, request.app.state.aggregator)
+    response = aggregator.get_keycounter_stats(account_filter=account)
+    if account is not None and not response.accounts:
+        all_kc = aggregator.get_keycounter_stats()
+        return JSONResponse(
+            status_code=404,
+            content={
+                "error": "keycounter_account_not_found",
+                "message": f"La cuenta de keycounter '{account}' no está configurada",
+                "available_accounts": list(all_kc.accounts.keys()),
             },
         )
     return response

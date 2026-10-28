@@ -33,14 +33,107 @@ def test_load_example_profiles_config() -> None:
     assert raupulus.accounts["bluesky"][0].account_key == "raupulus.dev"
     assert raupulus.accounts["linkedin"][0].enabled is False
     assert [c.account_key for c in raupulus.accounts["crypto"]] == ["btc", "ada"]
+    assert [k.account_key for k in raupulus.accounts["keycounter"]] == ["raupulus"]
+    assert raupulus.accounts["keycounter"][0].interval_minutes == 1
+    assert raupulus.accounts["keycounter"][0].get_poll_interval_seconds(300) == 60
 
     unique = registry.get_unique_accounts_by_platform(only_enabled=True)
     assert len(unique["youtube"]) == 3
     assert [c.account_key for c in unique["crypto"]] == ["btc", "ada"]
+    assert [k.account_key for k in unique["keycounter"]] == ["raupulus"]
     assert "linkedin" not in unique  # Because the only linkedin account is enabled=False
 
     unique_all = registry.get_unique_accounts_by_platform(only_enabled=False)
     assert len(unique_all["linkedin"]) == 1
+
+
+def test_load_example_json_profiles_config_and_enable_interval_features(
+    tmp_path: Path,
+) -> None:
+    """
+    Verify loading config/profiles.example.json and testing JSON configuration with
+    'enable' bool (profile and account level) and 'interval_minutes' individual polling intervals.
+    """
+    example_json_path = (
+        Path(__file__).resolve().parents[2] / "config" / "profiles.example.json"
+    )
+    registry = load_profiles_config(example_json_path)
+    assert "raupulus" in registry.profiles
+    assert "proyecto_secundario" in registry.profiles
+    assert registry.profiles["raupulus"].enable is True
+    assert registry.profiles["raupulus"].accounts["youtube"][0].interval_minutes == 5
+    assert (
+        registry.profiles["raupulus"].accounts["youtube"][0].get_poll_interval_seconds(300)
+        == 300
+    )
+    assert registry.profiles["raupulus"].accounts["youtube"][1].interval_minutes == 10
+    assert (
+        registry.profiles["raupulus"].accounts["youtube"][1].get_poll_interval_seconds(300)
+        == 600
+    )
+
+    # Test JSON with disabled profile, interval inheritance, and deduplication taking shortest interval
+    custom_json = tmp_path / "profiles.json"
+    custom_json.write_text(
+        """
+        {
+          "version": "1.0",
+          "profiles": {
+            "activo": {
+              "name": "Perfil Activo",
+              "enable": true,
+              "interval_minutes": 10,
+              "accounts": {
+                "twitter": [
+                  {"handle": "@raupulus", "enable": true, "interval_minutes": 15}
+                ],
+                "keystrokes": [
+                  {"handle": "raupulus", "enable": true, "interval_minutes": 1}
+                ]
+              }
+            },
+            "rapido": {
+              "name": "Perfil Rápido",
+              "enable": true,
+              "accounts": {
+                "twitter": [
+                  {"handle": "raupulus", "enable": true, "interval_minutes": 3}
+                ]
+              }
+            },
+            "inactivo": {
+              "name": "Perfil Inactivo",
+              "enable": false,
+              "accounts": {
+                "bluesky": [
+                  {"handle": "disabled.bsky.social", "enable": true, "interval_minutes": 2}
+                ]
+              }
+            }
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+    custom_reg = load_profiles_config(custom_json)
+    assert custom_reg.profiles["inactivo"].enabled is False
+    # Account inside disabled profile is automatically marked enabled=False
+    assert custom_reg.profiles["inactivo"].accounts["bluesky"][0].enabled is False
+    # Alias 'keystrokes' normalized to 'keycounter'
+    assert "keycounter" in custom_reg.profiles["activo"].accounts
+
+    unique = custom_reg.get_unique_accounts_by_platform(only_enabled=True)
+    assert "bluesky" not in unique
+    assert len(unique["twitter"]) == 1
+    # Shortest interval_minutes between 15 and 3 is 3 minutes (180 seconds)
+    assert unique["twitter"][0].interval_minutes == 3
+    assert unique["twitter"][0].get_poll_interval_seconds(600) == 180
+
+    # Malformed JSON raises clear ValueError
+    broken_json = tmp_path / "broken.json"
+    broken_json.write_text("{invalid json", encoding="utf-8")
+    with pytest.raises(ValueError, match="Malformed JSON"):
+        load_profiles_config(broken_json)
 
 
 def test_deduplication_across_profiles(tmp_path: Path) -> None:
@@ -170,23 +263,27 @@ def test_malformed_yaml_and_missing_file(tmp_path: Path) -> None:
 
     list_yaml = tmp_path / "list.yaml"
     list_yaml.write_text("- item1\n- item2\n", encoding="utf-8")
-    with pytest.raises(ValueError, match="expected a YAML mapping"):
+    with pytest.raises(ValueError, match="expected a JSON object / YAML mapping"):
         load_profiles_config(list_yaml)
 
 
 def test_settings_defaults_and_credentials_resolution(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify Settings defaults, CORS list parsing, and dynamic Instagram credentials."""
+    """Verify Settings defaults, CORS list parsing, and dynamic Instagram & Keycounter credentials."""
     monkeypatch.setenv("IG_PROYECTO_USER_ID", "17841400000000")
     monkeypatch.setenv("IG_PROYECTO_ACCESS_TOKEN", "secret_token_proyecto")
+    monkeypatch.setenv("KEYCOUNTER_WORK_API_TOKEN", "work_kc_token")
 
     settings = Settings(
+        _env_file=None,
         cors_allowed_origins="http://localhost:3000, http://10.8.0.5:8080",
         ig_main_user_id="main_id",
         ig_main_access_token="main_tok",
+        keycounter_api_token="main_kc_token",
     )
 
     assert settings.cors_origins_list == ["http://localhost:3000", "http://10.8.0.5:8080"]
     assert settings.get_poll_interval("youtube") == 300
+    assert settings.get_poll_interval("keycounter") == 60
     assert settings.get_poll_interval("unknown_platform") == 300
     assert settings.get_instagram_credentials("MAIN") == ("main_id", "main_tok")
     assert settings.get_instagram_credentials("proyecto") == (
@@ -194,3 +291,5 @@ def test_settings_defaults_and_credentials_resolution(monkeypatch: pytest.Monkey
         "secret_token_proyecto",
     )
     assert settings.get_instagram_credentials("nonexistent") == ("", "")
+    assert settings.get_keycounter_token("MAIN") == "main_kc_token"
+    assert settings.get_keycounter_token("WORK") == "work_kc_token"

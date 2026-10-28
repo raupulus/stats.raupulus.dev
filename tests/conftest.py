@@ -101,6 +101,14 @@ def sample_registry() -> ProfilesRegistry:
                                 "enabled": True,
                             },
                         ],
+                        "keycounter": [
+                            {
+                                "handle": "raupulus",
+                                "label": "Keycounter Principal",
+                                "enable": True,
+                                "interval_minutes": 1,
+                            }
+                        ],
                     },
                 },
                 "proyecto_secundario": {

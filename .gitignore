@@ -108,4 +108,7 @@ data/
 !.env.example
 config/profiles.yaml
 !config/profiles.example.yaml
+config/profiles.json
+!config/profiles.example.json
+
 

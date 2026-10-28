@@ -242,17 +242,40 @@ class CollectorScheduler:
         collector: BaseCollector,
         accounts: list[AccountConfig],
     ) -> None:
-        """Continuous polling loop for a single platform with jitter and exponential backoff."""
-        base_interval = self.settings.get_poll_interval(str(collector.platform))
+        """
+        Continuous polling loop for a platform supporting individual per-account
+        interval_minutes with batching, jitter, and exponential backoff.
+        """
+        default_interval = self.settings.get_poll_interval(str(collector.platform))
+        next_due: dict[str, float] = {acc.account_key: 0.0 for acc in accounts}
+
         while not self._stop_event.is_set():
-            failures = await self.run_collector_once(collector, accounts)
-            delay = calculate_backoff_delay(
-                base_interval,
-                failures,
-                apply_jitter=True,
-            )
+            now_mono = time.monotonic()
+            due_accounts = [
+                acc
+                for acc in accounts
+                if next_due.get(acc.account_key, 0.0) <= now_mono + 0.5
+            ]
+
+            if due_accounts:
+                await self.run_collector_once(collector, due_accounts)
+                completed_mono = time.monotonic()
+                for acc in due_accounts:
+                    acc_base_interval = acc.get_poll_interval_seconds(default_interval)
+                    acc_failures = self.state_store.get_consecutive_failures(
+                        collector.platform, acc.account_key
+                    )
+                    delay = calculate_backoff_delay(
+                        acc_base_interval,
+                        acc_failures,
+                        apply_jitter=True,
+                    )
+                    next_due[acc.account_key] = completed_mono + delay
+
+            earliest_due = min(next_due.values()) if next_due else (time.monotonic() + default_interval)
+            sleep_seconds = max(0.1, earliest_due - time.monotonic())
             try:
-                await asyncio.wait_for(self._stop_event.wait(), timeout=delay)
+                await asyncio.wait_for(self._stop_event.wait(), timeout=sleep_seconds)
             except TimeoutError:
                 continue
 

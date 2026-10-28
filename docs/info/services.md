@@ -7,8 +7,8 @@ Servicios de coordinación del núcleo: agregación multiperfil (`ProfileAggrega
 ## 1. Qué hace y qué NO hace
 
 ### 1.1. Qué hace
-- `ProfileAggregator`: proyecta los estados únicos de `StateStore` hacia cada perfil definido en `profiles.yaml`, sumando automáticamente las métricas de múltiples cuentas de una misma red social (ej. varios canales de YouTube) y determinando el estado agregado por plataforma.
-- `CollectorScheduler`: ejecuta bucles periódicos asíncronos por plataforma con *jitter* aleatorio (`±5%`), *exponential backoff* hasta 3600s ante errores, enriquecimiento con `SnapshotRepository`, notificación de cambios (`on_metric_update`, `on_status_change`) y tarea diaria de limpieza de SQLite (`_pruning_loop`).
+- `ProfileAggregator`: proyecta los estados únicos de `StateStore` hacia cada perfil definido en `profiles.json` / `profiles.yaml`, sumando automáticamente las métricas de múltiples cuentas de una misma red social (ej. varios canales de YouTube) y determinando el estado agregado por plataforma.
+- `CollectorScheduler`: ejecuta bucles periódicos asíncronos por plataforma respetando el intervalo individual en minutos (`interval_minutes`) de cada cuenta (y agrupando en lotes las cuentas cuyo vencimiento coincide), con *jitter* aleatorio (`±5%`), *exponential backoff* hasta 3600s ante errores, enriquecimiento con `SnapshotRepository`, notificación de cambios (`on_metric_update`, `on_status_change`) y tarea diaria de limpieza de SQLite (`_pruning_loop`).
 
 ### 1.2. Qué NO hace
 - No implementa la lógica específica de extracción HTTP de cada red social (delegada en `collectors`).
@@ -33,6 +33,7 @@ Servicios de coordinación del núcleo: agregación multiperfil (`ProfileAggrega
 - `ProfileAggregator.get_global_stats(profile_filter=None, platform_filter=None)`
 - `ProfileAggregator.get_profiles_catalog()`
 - `ProfileAggregator.get_crypto_prices(symbol_filter=None)`
+- `ProfileAggregator.get_keycounter_stats(account_filter=None)`
 - `ProfileAggregator.get_collectors_health()`
 - `CollectorScheduler.start()`, `stop()`, `run_collector_once()`
 - `WSManager.connect()`, `disconnect()`, `send_snapshot()`, `broadcast_update()`, `broadcast_collector_status()`, `broadcast_heartbeat()`, `start_heartbeat()`, `stop_heartbeat()`

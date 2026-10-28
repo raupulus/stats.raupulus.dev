@@ -45,6 +45,7 @@ RUN groupadd -g 10001 appgroup && \
 WORKDIR /app
 
 COPY --from=builder /opt/venv /opt/venv
+COPY --chown=appuser:appgroup config/profiles.example.json /app/config/profiles.example.json
 COPY --chown=appuser:appgroup config/profiles.example.yaml /app/config/profiles.example.yaml
 
 USER appuser

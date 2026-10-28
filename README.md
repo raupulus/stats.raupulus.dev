@@ -56,7 +56,7 @@ El servicio está concebido para operar en entornos locales y redes privadas acc
 
 ```bash
 cp .env.example .env
-cp config/profiles.example.yaml config/profiles.yaml
+cp config/profiles.example.json config/profiles.json
 mkdir -p data
 docker compose up --build -d
 ```
@@ -64,6 +64,8 @@ docker compose up --build -d
 ### Endpoints REST Principales (Read-Only)
 - `GET /api/v1/health` — Salud del contenedor, base de datos SQLite y estado de colectores.
 - `GET /api/v1/profiles` — Catálogo de perfiles configurados.
+- `GET /api/v1/crypto` — Cotizaciones spot y estadísticas 24h de criptomonedas (`BTC`, `ADA`) en USD y EUR.
+- `GET /api/v1/keycounter` — Estadísticas de pulsaciones de teclas y clics de ratón (totales, hoy y última hora).
 - `GET /api/v1/stats` — Estadísticas globales (filtrables con `?profile=` y `?platform=`).
 - `GET /api/v1/profiles/{profile_id}/stats` — Estadísticas agregadas y por cuenta de un perfil.
 - `GET /api/v1/profiles/{profile_id}/history?window=24h` — Serie temporal histórica (`1h`, `24h`, `7d`, `30d`).

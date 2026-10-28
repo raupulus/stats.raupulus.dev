@@ -45,6 +45,8 @@ class HistoryPoint(BaseModel):
     latest_post_views: int | None = None
     price_usd: float | None = None
     price_eur: float | None = None
+    pulsations_total: int | None = None
+    clicks_total: int | None = None
 
 
 class CryptoAssetPrice(BaseModel):
@@ -72,6 +74,30 @@ class CryptoPricesResponse(BaseModel):
 
     generated_at: datetime
     assets: dict[str, CryptoAssetPrice] = Field(default_factory=dict)
+
+
+class KeycounterAccountStats(BaseModel):
+    """Current keystroke and mouse click statistics for a configured keycounter account."""
+
+    account_key: str
+    handle: str | None = None
+    label: str | None = None
+    status: CollectorStatus
+    last_updated_at: datetime | None = None
+    error_message: str | None = None
+    pulsations_total: int | None = None
+    pulsations_today: int | None = None
+    pulsations_last_1h: int | None = None
+    clicks_total: int | None = None
+    clicks_today: int | None = None
+    clicks_last_1h: int | None = None
+
+
+class KeycounterStatsResponse(BaseModel):
+    """Response schema for GET /api/v1/keycounter."""
+
+    generated_at: datetime
+    accounts: dict[str, KeycounterAccountStats] = Field(default_factory=dict)
 
 
 class AccountHistorySeries(BaseModel):

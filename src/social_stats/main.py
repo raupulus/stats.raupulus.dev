@@ -19,6 +19,7 @@ from social_stats.collectors.base import BaseCollector
 from social_stats.collectors.bluesky import BlueskyCollector
 from social_stats.collectors.crypto import CryptoCollector
 from social_stats.collectors.instagram import InstagramCollector
+from social_stats.collectors.keycounter import KeycounterCollector
 from social_stats.collectors.linkedin import LinkedInCollector
 from social_stats.collectors.mastodon import MastodonCollector
 from social_stats.collectors.tiktok import TikTokCollector
@@ -85,17 +86,26 @@ def build_default_collectors(
         Platform.CRYPTO: CryptoCollector(
             snapshot_repo=snapshot_repo,
         ),
+        Platform.KEYCOUNTER: KeycounterCollector(
+            settings=settings,
+            snapshot_repo=snapshot_repo,
+        ),
     }
     return collectors
 
 
 def _resolve_profiles_path(configured_path: Path) -> Path:
-    """Resolve profiles.yaml path, falling back to config/profiles.example.yaml if absent."""
+    """Resolve profiles configuration path (.json or .yaml), falling back to example templates."""
     if configured_path.exists():
         return configured_path
-    fallback = Path("config/profiles.example.yaml")
-    if fallback.exists():
-        return fallback
+    for candidate in (
+        Path("config/profiles.json"),
+        Path("config/profiles.yaml"),
+        Path("config/profiles.example.json"),
+        Path("config/profiles.example.yaml"),
+    ):
+        if candidate.exists():
+            return candidate
     return configured_path
 
 
