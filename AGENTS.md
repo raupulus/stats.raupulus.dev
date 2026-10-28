@@ -124,7 +124,9 @@ Cualquier agente que trabaje en este repositorio debe aplicar este protocolo de 
 - [`docs/info/COMPONENTS.md`](docs/info/COMPONENTS.md) — Catálogo de componentes de presentación
 - [`docs/info/commands.md`](docs/info/commands.md) — Inventario de comandos CLI
 - [`docs/info/decisiones-tecnicas.md`](docs/info/decisiones-tecnicas.md) — Registro de decisiones técnicas
-- *Módulos implementados en `src/`:* `⚠️ Sin módulos implementados aún`
+- *Módulos implementados en `src/`:*
+  - [`docs/info/config.md`](docs/info/config.md) — Configuración de variables de entorno y perfiles declarativos (`profiles.yaml`)
+
 
 ### 5.4. Checklist Obligatorio antes de Cerrar Cualquier Tarea
 - [ ] Commits realizados automáticamente agrupando cada funcionalidad cerrada antes de cambiar de contexto

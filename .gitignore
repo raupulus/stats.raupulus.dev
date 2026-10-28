@@ -101,8 +101,11 @@ data/
 *.sqlite
 *.sqlite3
 
-# Sensitive environment variables
+# Sensitive environment variables & local profiles configuration
 .env
 .env.local
 .env.*.local
 !.env.example
+config/profiles.yaml
+!config/profiles.example.yaml
+

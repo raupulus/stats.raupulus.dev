@@ -26,9 +26,10 @@ Bienvenido a la documentación técnica **viva** del proyecto. Este directorio c
 
 ## 3. Estado de Módulos Implementados en Código
 
-> ⚠️ **Estado actual del repositorio:** `Sin módulos de código fuente implementados aún`.  
-> El directorio `src/` no ha sido inicializado. No existen módulos activos que documentar en esta sección.  
-> Conforme se vayan implementando módulos en el código, cada uno dispondrá de su correspondiente archivo `docs/info/<modulo>.md` creado a partir de `_MODULE_TEMPLATE.md` e indexado aquí.
+| Módulo | Archivo | Descripción |
+|---|---|---|
+| `config` | [`config.md`](./config.md) | Configuración de variables de entorno (`.env`) y cargador/validador declarativo de `config/profiles.yaml`. |
+
 
 ---
 
