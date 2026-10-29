@@ -4,7 +4,7 @@
 
 # Social Stats API & WebSockets
 
-Herramienta centralizada, empaquetada en un contenedor **Docker** y desarrollada en **Python**, diseñada para monitorizar estadísticas de redes sociales (YouTube, Bluesky, Mastodon, Twitter/X, Instagram, TikTok, etc.) y métricas de sistema, sirviendo la información a paneles, dashboards y pantallas de escritorio en tiempo real.
+Herramienta centralizada, empaquetada en un contenedor **Docker** y desarrollada en **Python**, diseñada para monitorizar estadísticas de redes sociales, canales, streaming y forjas Git (YouTube, Twitch, GitHub, GitLab, Telegram, Bluesky, Mastodon, Twitter/X, Instagram, TikTok, Facebook, LinkedIn), cripto spot y métricas de sistema, sirviendo la información a paneles, dashboards y pantallas de escritorio en tiempo real.
 
 El servicio está concebido para operar en entornos locales y redes privadas accesibles exclusivamente mediante **VPN**.
 

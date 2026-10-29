@@ -9,22 +9,32 @@
   const ALL_PROFILES_ID = "__all__";
   const SOCIAL_PLATFORMS_ORDER = [
     "youtube",
+    "twitch",
+    "github",
+    "gitlab",
     "twitter",
     "instagram",
-    "bluesky",
-    "mastodon",
+    "telegram",
     "tiktok",
+    "facebook",
+    "mastodon",
+    "bluesky",
     "linkedin",
   ];
 
   const PLATFORM_METADATA = {
-    youtube: { code: "YT", name: "YouTube" },
-    twitter: { code: "X", name: "X / Twitter" },
-    instagram: { code: "IG", name: "Instagram" },
-    bluesky: { code: "BSKY", name: "Bluesky" },
-    mastodon: { code: "MSTD", name: "Mastodon" },
-    tiktok: { code: "TT", name: "TikTok" },
-    linkedin: { code: "IN", name: "LinkedIn" },
+    youtube: { code: "YT", name: "YouTube", followersLabel: "Suscriptores", postsLabel: "Vídeos" },
+    twitch: { code: "TWCH", name: "Twitch", followersLabel: "Seguidores", postsLabel: "Vídeos / VODs" },
+    github: { code: "GH", name: "GitHub", followersLabel: "Seguidores", postsLabel: "Repositorios" },
+    gitlab: { code: "GL", name: "GitLab", followersLabel: "Seguidores", postsLabel: "Proyectos" },
+    twitter: { code: "X", name: "X / Twitter", followersLabel: "Seguidores", postsLabel: "Publicaciones" },
+    instagram: { code: "IG", name: "Instagram", followersLabel: "Seguidores", postsLabel: "Publicaciones" },
+    telegram: { code: "TG", name: "Telegram", followersLabel: "Suscriptores Canal", postsLabel: "Mensajes" },
+    tiktok: { code: "TT", name: "TikTok", followersLabel: "Seguidores", postsLabel: "Vídeos" },
+    facebook: { code: "FB", name: "Facebook", followersLabel: "Seguidores", postsLabel: "Publicaciones" },
+    mastodon: { code: "MSTD", name: "Mastodon", followersLabel: "Seguidores", postsLabel: "Toots" },
+    bluesky: { code: "BSKY", name: "Bluesky", followersLabel: "Seguidores", postsLabel: "Posts" },
+    linkedin: { code: "IN", name: "LinkedIn", followersLabel: "Seguidores", postsLabel: "Publicaciones" },
     crypto: { code: "SPOT", name: "Crypto Spot" },
     keycounter: { code: "KEY", name: "Keycounter" },
   };
@@ -354,6 +364,8 @@
     const activeCountNode = document.getElementById("active-social-count");
     const kpiFollowers = document.getElementById("kpi-total-followers");
     const kpiDeltaFollowers = document.getElementById("kpi-delta-followers");
+    const kpiStars = document.getElementById("kpi-total-stars");
+    const kpiForks = document.getElementById("kpi-total-forks");
     const kpiViews = document.getElementById("kpi-total-views");
     const kpiDeltaViews24h = document.getElementById("kpi-delta-views-24h");
     const kpiPosts = document.getElementById("kpi-total-posts");
@@ -363,6 +375,8 @@
 
     let grandFollowers = 0;
     let grandFollowers24h = 0;
+    let grandStars = 0;
+    let grandForks = 0;
     let grandViews = 0;
     let grandViews24h = 0;
     let grandViews1h = 0;
@@ -380,6 +394,12 @@
         grandFollowers += Number(m.followers_total || 0);
         grandFollowers24h += Number(m.followers_last_24h || 0);
         grandPosts += Number(m.posts_total || 0);
+        if (m.stars_total !== null && m.stars_total !== undefined) {
+          grandStars += Number(m.stars_total);
+        }
+        if (m.forks_total !== null && m.forks_total !== undefined) {
+          grandForks += Number(m.forks_total);
+        }
         if (m.views_total !== null && m.views_total !== undefined) {
           grandViews += Number(m.views_total);
         }
@@ -402,6 +422,14 @@
       kpiDeltaFollowers.textContent = formatSignedDelta(grandFollowers24h, "24h: ");
       applyDeltaClass(kpiDeltaFollowers, grandFollowers24h);
     }
+    if (kpiStars) {
+      kpiStars.textContent = formatInt(grandStars);
+    }
+    if (kpiForks) {
+      kpiForks.textContent = `Forks: ${formatInt(grandForks)}`;
+      kpiForks.classList.remove("is-positive", "is-negative", "is-neutral");
+      kpiForks.classList.add(grandForks > 0 ? "is-positive" : "is-neutral");
+    }
     if (kpiViews) {
       kpiViews.textContent = formatInt(grandViews);
     }
@@ -423,6 +451,7 @@
       const pid = prof.profile_id || prof.name || "perfil";
       const profileCards = [];
       let profFollowers = 0;
+      let profStars = 0;
       let profViews = 0;
       let profPosts = 0;
 
@@ -435,9 +464,14 @@
         let platFollowers = 0;
         let platFollowers24h = 0;
         let platPosts = 0;
+        let platStars = null;
+        let platForks = null;
+        let platIsLive = false;
+        let platLiveViewers = 0;
         let platViews = null;
         let platViews24h = null;
         let platViews1h = null;
+        let latestPostObj = null;
         let hasStale = false;
 
         for (const acc of accounts) {
@@ -445,6 +479,18 @@
           platFollowers += Number(m.followers_total || 0);
           platFollowers24h += Number(m.followers_last_24h || 0);
           platPosts += Number(m.posts_total || 0);
+          if (m.stars_total !== null && m.stars_total !== undefined) {
+            platStars = (platStars || 0) + Number(m.stars_total);
+          }
+          if (m.forks_total !== null && m.forks_total !== undefined) {
+            platForks = (platForks || 0) + Number(m.forks_total);
+          }
+          if (m.is_live === true) {
+            platIsLive = true;
+          }
+          if (m.live_viewers !== null && m.live_viewers !== undefined) {
+            platLiveViewers += Number(m.live_viewers);
+          }
           if (m.views_total !== null && m.views_total !== undefined) {
             platViews = (platViews || 0) + Number(m.views_total);
           }
@@ -454,6 +500,9 @@
           if (m.views_last_1h !== null && m.views_last_1h !== undefined) {
             platViews1h = (platViews1h || 0) + Number(m.views_last_1h);
           }
+          if (!latestPostObj && m.latest_post) {
+            latestPostObj = m.latest_post;
+          }
           if (acc.status && acc.status !== "healthy") {
             hasStale = true;
           }
@@ -461,6 +510,9 @@
 
         profFollowers += platFollowers;
         profPosts += platPosts;
+        if (platStars !== null) {
+          profStars += platStars;
+        }
         if (platViews !== null) {
           profViews += platViews;
         }
@@ -473,9 +525,14 @@
             platFollowers,
             platFollowers24h,
             platPosts,
+            platStars,
+            platForks,
+            platIsLive,
+            platLiveViewers,
             platViews,
             platViews24h,
             platViews1h,
+            latestPostObj,
             hasStale,
           })
         );
@@ -494,11 +551,13 @@
 
       const subtitleLine = el("p", "profile-group-subtitle");
       subtitleLine.append(
-        document.createTextNode("Seguidores del perfil: "),
+        document.createTextNode("Seguidores: "),
         el("strong", "", formatInt(profFollowers)),
-        document.createTextNode(" · Visualizaciones: "),
+        document.createTextNode(" · Estrellas/Likes: "),
+        el("strong", "", `★ ${formatInt(profStars)}`),
+        document.createTextNode(" · Vistas: "),
         el("strong", "", formatInt(profViews)),
-        document.createTextNode(" · Publicaciones: "),
+        document.createTextNode(" · Publicaciones/Repos: "),
         el("strong", "", formatInt(profPosts))
       );
       titleWrap.append(subtitleLine);
@@ -506,7 +565,7 @@
       const groupPill = el(
         "span",
         "profile-group-pill",
-        `@${pid} · ${profileCards.length} ${profileCards.length === 1 ? "red social" : "redes sociales"}`
+        `@${pid} · ${profileCards.length} ${profileCards.length === 1 ? "plataforma" : "plataformas"}`
       );
       groupHeader.append(titleWrap, groupPill);
 
@@ -537,14 +596,21 @@
     platFollowers,
     platFollowers24h,
     platPosts,
+    platStars,
+    platForks,
+    platIsLive,
+    platLiveViewers,
     platViews,
     platViews24h,
     platViews1h,
+    latestPostObj,
     hasStale,
   }) {
     const meta = PLATFORM_METADATA[platKey] || {
       code: platKey.slice(0, 3).toUpperCase(),
       name: platKey,
+      followersLabel: "Seguidores / Suscriptores",
+      postsLabel: "Publicaciones",
     };
 
     const isFlashed = state.flashedCardKey === `${profileId}:${platKey}`;
@@ -552,25 +618,34 @@
     card.dataset.platform = platKey;
     card.dataset.profileId = profileId;
 
-    const header = el("div", "platform-card-header");
+    const header = el("header", "platform-card-header");
     const titleGroup = el("div", "platform-title-group");
     titleGroup.append(
       el("span", "platform-badge-code", meta.code),
       el("h3", "platform-name", meta.name)
     );
 
-    const statusPill = el(
-      "span",
-      `platform-status-pill${hasStale ? " is-stale" : ""}`,
-      hasStale ? "CACHÉ / STALE" : `${accounts.length} ${accounts.length === 1 ? "CANAL" : "CANALES"}`
-    );
+    let pillClass = "platform-status-pill";
+    let pillText = `${accounts.length} ${accounts.length === 1 ? "CANAL" : "CANALES"}`;
+    if (hasStale) {
+      pillClass += " is-stale";
+      pillText = "CACHÉ / STALE";
+    } else if (platKey === "twitch" && platIsLive) {
+      pillClass += " is-live-stream";
+      pillText = `● EN DIRECTO · ${formatInt(platLiveViewers)}`;
+    } else if (platKey === "twitch") {
+      pillClass += " is-offline";
+      pillText = "OFFLINE";
+    }
+    const statusPill = el("span", pillClass, pillText);
     header.append(titleGroup, statusPill);
 
+    const contentRegion = el("div", "platform-card-content");
     const mainMetric = el("div", "platform-main-metric");
     const leftFollowers = el("div", "");
     leftFollowers.append(
       el("div", "platform-followers-value", formatInt(platFollowers)),
-      el("div", "platform-followers-label", "Seguidores / Suscriptores")
+      el("div", "platform-followers-label", meta.followersLabel || "Seguidores / Suscriptores")
     );
     const deltaBadge = el(
       "span",
@@ -581,41 +656,110 @@
     mainMetric.append(leftFollowers, deltaBadge);
 
     const subGrid = el("div", "platform-submetrics-grid");
-    subGrid.append(
-      buildSubmetricCell("Publicaciones", formatInt(platPosts)),
-      buildSubmetricCell(
-        "Vistas Totales",
-        platViews !== null ? formatInt(platViews) : "N/A"
-      ),
-      buildSubmetricCell(
-        "Vistas 24h",
-        platViews24h !== null ? formatSignedDelta(platViews24h) : "N/A"
-      ),
-      buildSubmetricCell(
-        "Vistas 1h",
-        platViews1h !== null ? formatSignedDelta(platViews1h) : "N/A"
-      )
-    );
+    if (platKey === "github" || platKey === "gitlab") {
+      const topRepoStars =
+        latestPostObj && latestPostObj.likes !== null && latestPostObj.likes !== undefined
+          ? `★ ${formatInt(latestPostObj.likes)}`
+          : "—";
+      subGrid.append(
+        buildSubmetricCell(meta.postsLabel || "Repositorios", formatInt(platPosts)),
+        buildSubmetricCell("Estrellas Totales", `★ ${formatInt(platStars || 0)}`),
+        buildSubmetricCell("Forks Totales", formatInt(platForks || 0)),
+        buildSubmetricCell("Último Repo Activo", topRepoStars)
+      );
+    } else if (platKey === "twitch") {
+      const vodViews =
+        latestPostObj && latestPostObj.views !== null && latestPostObj.views !== undefined
+          ? formatInt(latestPostObj.views)
+          : "—";
+      subGrid.append(
+        buildSubmetricCell("Estado Stream", platIsLive ? "EN DIRECTO" : "Offline"),
+        buildSubmetricCell("Espectadores Live", platIsLive ? formatInt(platLiveViewers) : "0"),
+        buildSubmetricCell(meta.postsLabel || "Vídeos / VODs", formatInt(platPosts)),
+        buildSubmetricCell("Vistas Último VOD", vodViews)
+      );
+    } else if (platKey === "telegram") {
+      const latestViews =
+        latestPostObj && latestPostObj.views !== null && latestPostObj.views !== undefined
+          ? formatInt(latestPostObj.views)
+          : platViews !== null
+            ? formatInt(platViews)
+            : "—";
+      subGrid.append(
+        buildSubmetricCell("Último Mensaje", platPosts > 0 ? `#${formatInt(platPosts)}` : "—"),
+        buildSubmetricCell("Vistas Último Post", latestViews),
+        buildSubmetricCell(
+          "Vistas 24h",
+          platViews24h !== null ? formatSignedDelta(platViews24h) : "0"
+        ),
+        buildSubmetricCell(
+          "Vistas 1h",
+          platViews1h !== null ? formatSignedDelta(platViews1h) : "0"
+        )
+      );
+    } else if (platKey === "facebook") {
+      subGrid.append(
+        buildSubmetricCell(
+          "Me gusta Página",
+          platStars !== null ? formatInt(platStars) : "N/A"
+        ),
+        buildSubmetricCell("Seguidores 24h", formatSignedDelta(platFollowers24h)),
+        buildSubmetricCell(
+          "Publicaciones",
+          platPosts > 0 ? formatInt(platPosts) : "N/A"
+        ),
+        buildSubmetricCell("Canal", `${accounts.length} página`)
+      );
+    } else {
+      subGrid.append(
+        buildSubmetricCell(meta.postsLabel || "Publicaciones", formatInt(platPosts)),
+        buildSubmetricCell(
+          "Vistas Totales",
+          platViews !== null ? formatInt(platViews) : "N/A"
+        ),
+        buildSubmetricCell(
+          "Vistas 24h",
+          platViews24h !== null ? formatSignedDelta(platViews24h) : "N/A"
+        ),
+        buildSubmetricCell(
+          "Vistas 1h",
+          platViews1h !== null ? formatSignedDelta(platViews1h) : "N/A"
+        )
+      );
+    }
 
-    const accountsList = el("div", "platform-accounts-list");
+    contentRegion.append(mainMetric, subGrid);
+
+    const accountsList = el("footer", "platform-accounts-list");
     for (const acc of accounts) {
       const row = el("div", "account-row");
       const labelGroup = el("div", "account-label-group");
+      const rawHandle = acc.handle ? String(acc.handle).replace(/^@/, "") : acc.account_key;
+      const handleDisplay =
+        platKey === "gitlab" && acc.instance
+          ? `@${rawHandle} · ${acc.instance}`
+          : platKey === "telegram"
+            ? `t.me/${rawHandle}`
+            : `@${rawHandle}`;
       labelGroup.append(
         el("span", "account-title", acc.label || acc.handle || acc.account_key),
-        el("span", "account-handle", acc.handle ? `@${String(acc.handle).replace(/^@/, "")}` : acc.account_key)
+        el("span", "account-handle", handleDisplay)
       );
-      const followersVal = acc.metrics ? acc.metrics.followers_total : null;
-      const metricPill = el(
-        "code",
-        "account-metric-pill",
-        `${formatInt(followersVal)} seg.`
-      );
+      const m = acc.metrics || {};
+      let pillMetricText = `${formatInt(m.followers_total)} seg.`;
+      if ((platKey === "github" || platKey === "gitlab") && m.stars_total !== null && m.stars_total !== undefined) {
+        pillMetricText = `${formatInt(m.followers_total)} seg. · ★ ${formatInt(m.stars_total)}`;
+      } else if (platKey === "telegram") {
+        pillMetricText = `${formatInt(m.followers_total)} susc.`;
+      } else if (platKey === "twitch" && m.is_live) {
+        pillMetricText = `LIVE · ${formatInt(m.live_viewers)} esp.`;
+      }
+      const metricPill = el("code", "account-metric-pill", pillMetricText);
       row.append(labelGroup, metricPill);
       accountsList.append(row);
     }
 
-    card.append(header, mainMetric, subGrid, accountsList);
+    card.append(header, contentRegion, accountsList);
     return card;
   }
 
@@ -854,8 +998,14 @@
     if (changedKeys.length > 0) {
       const firstKey = changedKeys[0];
       const deltaObj = changes[firstKey];
-      const sign = deltaObj && Number(deltaObj.delta) >= 0 ? "+" : "";
-      const summaryText = `${plat}:${data.account_key} ${firstKey} (${sign}${deltaObj ? deltaObj.delta : 0})`;
+      let changeLabel = "0";
+      if (deltaObj && deltaObj.delta !== undefined && deltaObj.delta !== null) {
+        const sign = Number(deltaObj.delta) >= 0 ? "+" : "";
+        changeLabel = `${sign}${deltaObj.delta}`;
+      } else if (deltaObj && typeof deltaObj.current === "boolean") {
+        changeLabel = deltaObj.current ? "LIVE" : "OFFLINE";
+      }
+      const summaryText = `${plat}:${data.account_key} ${firstKey} (${changeLabel})`;
       state.recentUpdates.unshift(summaryText);
       if (state.recentUpdates.length > 4) {
         state.recentUpdates.pop();

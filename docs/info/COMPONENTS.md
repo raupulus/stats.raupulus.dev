@@ -28,15 +28,20 @@ Definición estructural, visual y de accesibilidad de los componentes implementa
 ## 2. Componentes de Métricas en Tiempo Real
 
 ### 2.1. `ProfileSocialGroup` y `SocialPlatformCard` (`StatCard`)
-- **Propósito:** Separa y agrupa claramente cada perfil de redes sociales activo en su propio panel contenedor (`.profile-social-group`), mostrando dentro sus tarjetas de plataforma (`YouTube`, `Twitter/X`, `Instagram`, `Bluesky`, `Mastodon`, `TikTok`, `LinkedIn`).
+- **Propósito:** Separa y agrupa claramente cada perfil activo en su propio panel contenedor (`.profile-social-group`), mostrando dentro sus tarjetas de plataforma para las 12 redes sociales, forjas y canales soportados (`YouTube`, `Twitch`, `GitHub`, `GitLab`, `Twitter/X`, `Instagram`, `Telegram`, `TikTok`, `Facebook`, `Mastodon`, `Bluesky`, `LinkedIn`).
 - **Elementos visuales:**
-  - Cabecera del grupo de perfil (`.profile-group-header`) con el nombre del perfil, resumen consolidado de seguidores/visualizaciones/publicaciones del perfil y píldora derecha `@<profile_id> · N redes sociales`.
-  - Dentro de cada grupo, cuadrícula adaptable (`.profile-group-platforms-grid`) de tarjetas `.platform-card`:
-    - Cabecera con código de red social, nombre de plataforma y píldora de número de canales o estado (`CACHÉ / STALE`).
+  - Cabecera del grupo de perfil (`.profile-group-header`) con el nombre del perfil, resumen consolidado de seguidores, estrellas/likes (`★`), visualizaciones y publicaciones/repositorios del perfil, y píldora derecha `@<profile_id> · N plataformas`.
+  - Dentro de cada grupo, cuadrícula adaptable (`.profile-group-platforms-grid`) de tarjetas semánticas `<article class="platform-card">` con regiones `<header>`, `.platform-card-content` y `<footer>` y adaptación por `@container`:
+    - Cabecera `<header>` con código de plataforma (`YT`, `TWCH`, `GH`, `GL`, `X`, `IG`, `TG`, `TT`, `FB`, `MSTD`, `BSKY`, `IN`), nombre y píldora de estado (`N CANAL(ES)`, `● EN DIRECTO · N` pulsante en `Twitch` cuando `is_live === true`, `OFFLINE` o `CACHÉ / STALE`).
     - Métrica principal en tipografía monoespaciada (`followers_total`) acompañada de `MetricDeltaBadge` ($\Delta_{24h}$).
-    - Métricas secundarias en rejilla compacta: `Publicaciones` (`posts_total`), `Vistas Totales` (`views_total`, si aplica), `Vistas 24h` ($\Delta_{24h}$) y `Vistas 1h` ($\Delta_{1h}$).
-    - Lista desglosada de cuentas/canales del perfil con sus respectivos contadores e identificador `@handle`.
-    - Destello luminoso (`.is-flash`) al recibir un evento `metric_update` en vivo.
+    - Métricas secundarias contextuales en rejilla compacta:
+      - `GitHub` / `GitLab`: `Repositorios` / `Proyectos`, `Estrellas Totales` (`★ stars_total`), `Forks Totales` (`forks_total`) y `Último Repo Activo`.
+      - `Twitch`: `Estado Stream`, `Espectadores Live` (`live_viewers`), `Vídeos / VODs` y `Vistas Último VOD`.
+      - `Telegram`: `Último Mensaje` (`#id`), `Vistas Último Post`, `Vistas 24h` y `Vistas 1h`.
+      - `Facebook`: `Me gusta Página` (`stars_total`), `Seguidores 24h`, `Publicaciones` y `Canal`.
+      - Resto de plataformas: `Publicaciones` (`posts_total`), `Vistas Totales` (`views_total`), `Vistas 24h` ($\Delta_{24h}$) y `Vistas 1h` ($\Delta_{1h}$).
+    - Pie `<footer>` con lista desglosada de cuentas/canales del perfil con contadores e identificador (`@handle`, `@handle · instance` en GitLab o `t.me/canal` en Telegram).
+    - Destello luminoso (`.is-flash`) al recibir un evento `metric_update` en vivo y énfasis automático `:has(.is-live-stream)` cuando un canal emite en directo.
 
 ### 2.2. `CryptoSpotCard`
 - **Propósito:** Muestra la cotización spot en tiempo real de cada criptomoneda configurada (`BTC`, `ADA`) en **doble divisa (USD y EUR)**.
@@ -62,4 +67,4 @@ Definición estructural, visual y de accesibilidad de los componentes implementa
   - Etiqueta descriptiva en negrita a la izquierda y píldoras monoespaciadas (`<code>`) a la derecha con los valores y diferenciales ($\Delta$).
 
 ---
-> Creado: 2026-10-28 · Última revisión: 2026-10-28
+> Creado: 2026-10-28 · Última revisión: 2026-10-29

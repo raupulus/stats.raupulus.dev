@@ -643,17 +643,56 @@ body {
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 0.95rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.platform-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
 }
 
 .platform-card:hover {
   border-color: var(--border-hover);
 }
 
-.platform-card.is-flash {
+.platform-card.is-flash,
+.platform-card:has(.is-live-stream) {
   border-color: var(--border-glow-active);
   box-shadow: var(--shadow-glow-active);
+}
+
+/* Matices sutiles por plataforma integrados con la paleta azul de raupulus.dev */
+.platform-card[data-platform="github"] .platform-badge-code {
+  background: rgba(163, 201, 255, 0.16);
+  border-color: rgba(217, 227, 246, 0.38);
+  color: var(--color-on-surface);
+}
+
+.platform-card[data-platform="gitlab"] .platform-badge-code {
+  background: rgba(234, 107, 21, 0.18);
+  border-color: rgba(255, 182, 145, 0.38);
+  color: var(--color-secondary);
+}
+
+.platform-card[data-platform="telegram"] .platform-badge-code {
+  background: rgba(0, 122, 150, 0.28);
+  border-color: rgba(76, 214, 255, 0.44);
+  color: var(--color-tertiary);
+}
+
+.platform-card[data-platform="twitch"] .platform-badge-code {
+  background: rgba(98, 86, 196, 0.24);
+  border-color: rgba(163, 201, 255, 0.4);
+  color: #c9c3ff;
+}
+
+.platform-card[data-platform="facebook"] .platform-badge-code {
+  background: rgba(50, 114, 184, 0.32);
+  border-color: rgba(163, 201, 255, 0.44);
+  color: var(--color-primary);
 }
 
 .platform-card-header {
@@ -705,6 +744,29 @@ body {
   color: var(--color-warning);
 }
 
+.platform-status-pill.is-offline {
+  border-color: rgba(139, 145, 156, 0.34);
+  color: var(--color-on-surface-variant);
+}
+
+.platform-status-pill.is-live-stream {
+  border-color: rgba(76, 214, 255, 0.68);
+  background: rgba(0, 122, 150, 0.3);
+  color: var(--color-tertiary);
+  box-shadow: 0 0 14px -2px rgba(76, 214, 255, 0.45);
+  animation: pulse-live-pill 2.2s ease-in-out infinite;
+}
+
+@keyframes pulse-live-pill {
+  0%,
+  100% {
+    box-shadow: 0 0 10px -2px rgba(76, 214, 255, 0.32);
+  }
+  50% {
+    box-shadow: 0 0 18px 0 rgba(76, 214, 255, 0.62);
+  }
+}
+
 .platform-main-metric {
   display: flex;
   align-items: baseline;
@@ -735,6 +797,12 @@ body {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.55rem;
+}
+
+@container (max-width: 270px) {
+  .platform-submetrics-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .submetric-cell {
