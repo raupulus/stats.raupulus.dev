@@ -9,6 +9,7 @@ from email.utils import parsedate_to_datetime
 from typing import Any
 
 import httpx
+from curl_cffi.requests import AsyncSession
 
 from social_stats.collectors.base import (
     DEFAULT_HTTP_TIMEOUT,
@@ -44,6 +45,43 @@ def _parse_int(val: Any) -> int | None:
         return None
     try:
         return int(val)
+    except (ValueError, TypeError):
+        return None
+
+
+def _parse_shorthand_int(val: str | None) -> int | None:
+    if not val:
+        return None
+    cleaned = val.strip().replace(" ", "").upper()
+    multiplier = 1
+    if cleaned.endswith("K"):
+        multiplier = 1_000
+        cleaned = cleaned[:-1]
+    elif cleaned.endswith("M"):
+        multiplier = 1_000_000
+        cleaned = cleaned[:-1]
+    elif cleaned.endswith("B"):
+        multiplier = 1_000_000_000
+        cleaned = cleaned[:-1]
+
+    if "," in cleaned and "." in cleaned:
+        if cleaned.rfind(",") > cleaned.rfind("."):
+            cleaned = cleaned.replace(".", "").replace(",", ".")
+        else:
+            cleaned = cleaned.replace(",", "")
+    elif "," in cleaned:
+        parts = cleaned.split(",")
+        if len(parts[-1]) == 3 and len(parts) > 1:
+            cleaned = cleaned.replace(",", "")
+        else:
+            cleaned = cleaned.replace(",", ".")
+    elif "." in cleaned:
+        parts = cleaned.split(".")
+        if len(parts[-1]) == 3 and len(parts) > 1:
+            cleaned = cleaned.replace(".", "")
+
+    try:
+        return int(float(cleaned) * multiplier)
     except (ValueError, TypeError):
         return None
 
@@ -313,6 +351,58 @@ class TwitterCollector(BaseCollector):
             latest_post=latest_post,
         )
 
+    async def _fetch_public_page(
+        self,
+        handle: str,
+        client: httpx.AsyncClient | None = None,
+    ) -> AccountMetrics:
+        """Fallback to parsing Twitter public profile SSR HTML."""
+        url = f"https://x.com/{handle}"
+        headers = {
+            "User-Agent": DEFAULT_USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9,es;q=0.8",
+        }
+        html: str
+        if client is not None:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code != 200:
+                raise CollectorError(
+                    f"Twitter public page failed with HTTP {resp.status_code}",
+                    status_code=resp.status_code,
+                )
+            html = resp.text
+        else:
+            async with AsyncSession(impersonate="chrome124", timeout=15.0) as session:
+                c_resp = await session.get(url, headers=headers)
+                if c_resp.status_code != 200:
+                    raise CollectorError(
+                        f"Twitter public page failed with HTTP {c_resp.status_code}",
+                        status_code=c_resp.status_code,
+                    )
+                html = c_resp.text
+
+        f_match = re.search(
+            r"href=\"/[^/]+/(?:verified_followers|followers)\"[^>]*>.*?<span[^>]*>([0-9.,KkMmBb]+)</span>\s*<span[^>]*>(?:Followers|Seguidores)</span>",
+            html,
+            re.DOTALL | re.IGNORECASE,
+        )
+        followers = _parse_shorthand_int(f_match.group(1)) if f_match else None
+
+        tw_match = re.search(r"tweets:([0-9]+)", html)
+        posts = int(tw_match.group(1)) if tw_match else None
+
+        if followers is None and posts is None:
+            raise CollectorError(
+                f"Could not parse metrics from Twitter public page for '{handle}'"
+            )
+
+        return AccountMetrics(
+            followers_total=followers,
+            posts_total=posts,
+            views_total=None,
+        )
+
     async def _collect_with_client(
         self,
         client: httpx.AsyncClient,
@@ -354,10 +444,17 @@ class TwitterCollector(BaseCollector):
                     handle,
                     followers_map.get(handle),
                 )
-                enriched = await self.enrich_with_snapshots(acc.account_key, base_metrics)
-                results[acc.account_key] = enriched
-            except Exception as exc:
-                self.record_account_error(acc.account_key, f"{type(exc).__name__}: {exc}")
+            except Exception:
+                # Fallback to public SSR page parsing
+                try:
+                    base_metrics = await self._fetch_public_page(handle)
+                except Exception as exc:
+                    self.record_account_error(
+                        acc.account_key, f"{type(exc).__name__}: {exc}"
+                    )
+                    continue
+            enriched = await self.enrich_with_snapshots(acc.account_key, base_metrics)
+            results[acc.account_key] = enriched
 
         return results
 

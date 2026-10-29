@@ -190,3 +190,37 @@ async def test_twitter_level_b_graphql_and_fallback_to_level_a_on_401() -> None:
     assert results_b["raupulus"].latest_post is not None
     assert results_b["raupulus"].latest_post.views == 3100
     assert results_b["raupulus"].latest_post.shares == 18
+
+
+@respx.mock
+async def test_twitter_public_page_fallback() -> None:
+    """Verify that when Syndication fails (e.g. 429), collector falls back to public page."""
+    respx.get(SYNDICATION_FOLLOWERS_URL).mock(return_value=httpx.Response(429))
+    respx.get("https://syndication.twitter.com/srv/timeline-profile/screen-name/raupulus").mock(
+        return_value=httpx.Response(429)
+    )
+
+    mock_html = """
+    <html>
+      <body>
+        <a href="/raupulus/verified_followers">
+          <div><span>1,303</span> <span>Followers</span></div>
+        </a>
+        <script>tweets:4157</script>
+      </body>
+    </html>
+    """
+    respx.get("https://x.com/raupulus").mock(
+        return_value=httpx.Response(200, text=mock_html)
+    )
+
+    accounts = [
+        AccountConfig(handle="raupulus", account_key="raupulus", platform="twitter")
+    ]
+    async with httpx.AsyncClient() as client:
+        collector = TwitterCollector(http_client=client)
+        results = await collector.collect_batch(accounts)
+
+    assert "raupulus" in results
+    assert results["raupulus"].followers_total == 1303
+    assert results["raupulus"].posts_total == 4157

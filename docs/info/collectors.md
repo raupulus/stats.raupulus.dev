@@ -16,8 +16,8 @@ Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección as�
   - `CryptoCollector` (`crypto.py`): consulta batch de cotizaciones spot y estadísticas 24h en dólares (`USDT`) y euros (`EUR`) mediante Binance Public Market API (`/api/v3/ticker/24hr`) sin tokens.
   - `KeycounterCollector` (`keycounter.py`): consulta de pulsaciones de teclas y clics de ratón (totales históricos, hoy y última hora) contra el endpoint configurado en `KEYCOUNTER_API_URL` (`https://api.example.com/api/v2/keycounter/stats` por defecto) con autenticación `Authorization: Bearer <TOKEN>`.
 - Implementa los colectores de Nivel 2 (arquitectura dual con fallback):
-  - `TwitterCollector` (`twitter.py`): Nivel A Syndication API (`followbutton/info.json` + `timeline-profile`) y Nivel B GraphQL con cookies Read-Only opcionales.
-  - `InstagramCollector` (`instagram.py`): Nivel A Meta Graph API con System User Token permanente en cabecera `Authorization: Bearer <TOKEN>` y Nivel B fallback `web_profile_info` con `curl_cffi`.
+  - `TwitterCollector` (`twitter.py`): Nivel A Syndication API (`followbutton/info.json` + `timeline-profile`), Nivel B GraphQL con cookies Read-Only opcionales, y fallback automático de contingencia a SSR HTML con `curl_cffi` cuando Syndication experimenta `HTTP 429`.
+  - `InstagramCollector` (`instagram.py`): Nivel A Meta Graph API con System User Token permanente en cabecera `Authorization: Bearer <TOKEN>`, Nivel B fallback `web_profile_info` con `curl_cffi`, y fallback automático a OpenGraph HTML cuando `web_profile_info` responde `401`.
   - `TikTokCollector` (`tiktok.py`): extracción SSR desde `<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__">` con `curl_cffi` y soporte opcional para TikTok Display API v2 con rotación automática de `refresh_token` en SQLite.
 - Implementa el colector de Nivel 3 (aislado y opcional):
   - `LinkedInCollector` (`linkedin.py`): modos `organization` (API oficial) y `personal` (Voyager API con cookie `li_at`), reportando `status: "disabled"` si no se configuran credenciales.
@@ -92,4 +92,4 @@ Interfaz común (`BaseCollector`) y proveedores desacoplados de recolección as�
 - Ninguno. Los 9 colectores están implementados y cubiertos por tests unitarios.
 
 ---
-> Creado: 2026-10-28 · Última revisión: 2026-10-28
+> Creado: 2026-10-28 · Última revisión: 2026-10-29

@@ -175,3 +175,31 @@ async def test_instagram_level_b_uses_curl_cffi_when_enabled(monkeypatch) -> Non
     assert results["raupulus"].followers_total == 3100
     assert results["raupulus"].posts_total == 150
 
+
+@respx.mock
+async def test_instagram_og_html_fallback() -> None:
+    """Verify that when web_profile_info returns 401, collector parses public og:description."""
+    respx.get(IG_WEB_PROFILE_URL).mock(return_value=httpx.Response(401))
+
+    mock_html = """
+    <html>
+      <head>
+        <meta property="og:description" content="2,570 Followers, 823 Following, 238 Posts - See Instagram photos and videos" />
+      </head>
+    </html>
+    """
+    respx.get("https://www.instagram.com/raupulus/").mock(
+        return_value=httpx.Response(200, text=mock_html)
+    )
+
+    accounts = [
+        AccountConfig(handle="raupulus", account_key="raupulus", platform="instagram")
+    ]
+    async with httpx.AsyncClient() as client:
+        collector = InstagramCollector(http_client=client)
+        results = await collector.collect_batch(accounts)
+
+    assert "raupulus" in results
+    assert results["raupulus"].followers_total == 2570
+    assert results["raupulus"].posts_total == 238
+
