@@ -131,6 +131,22 @@ social-stats-api-websockets/
 │   ├── css/
 │   │   └── styles.css
 │   ├── favicon.svg
+│   ├── images/
+│   │   └── platforms/
+│   │       ├── ada.webp
+│   │       ├── bluesky.webp
+│   │       ├── btc.webp
+│   │       ├── facebook.webp
+│   │       ├── github.webp
+│   │       ├── gitlab.webp
+│   │       ├── instagram.webp
+│   │       ├── linkedin.webp
+│   │       ├── mastodon.webp
+│   │       ├── telegram.webp
+│   │       ├── tiktok.webp
+│   │       ├── twitch.webp
+│   │       ├── twitter.webp
+│   │       └── youtube.webp
 │   ├── index.html
 │   ├── js/
 │   │   └── app.js

@@ -40,6 +40,14 @@
   };
 
   const numberFormatter = new Intl.NumberFormat("es-ES");
+  const localDateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
   const usdFormatter = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -55,8 +63,10 @@
 
   const state = {
     profiles: {},
+    globalCrypto: null,
     selectedProfileIds: new Set(),
-    initializedProfiles: false,
+    userCustomizedSelection: false,
+    hasActiveKeycounter: false,
     selectedCategory: "all",
     eventsCount: 0,
     recentUpdates: [],
@@ -136,30 +146,32 @@
     }
     const dateObj = isoTimestamp ? new Date(isoTimestamp) : new Date();
     if (Number.isNaN(dateObj.getTime())) {
-      clockNode.textContent = "--:--:-- UTC";
+      clockNode.textContent = "--:--:--";
       return;
     }
-    const hh = String(dateObj.getUTCHours()).padStart(2, "0");
-    const mm = String(dateObj.getUTCMinutes()).padStart(2, "0");
-    const ss = String(dateObj.getUTCSeconds()).padStart(2, "0");
-    clockNode.textContent = `${hh}:${mm}:${ss} UTC`;
+    clockNode.textContent = localDateTimeFormatter.format(dateObj);
   }
 
   function setWsConnectionStatus(mode, labelText) {
-    const pill = document.getElementById("ws-status-pill");
+    const dotNode = document.getElementById("ws-status-dot");
     const textNode = document.getElementById("ws-status-text");
-    if (!pill || !textNode) {
+    if (!dotNode) {
       return;
     }
-    pill.classList.remove("is-connected", "is-connecting", "is-disconnected");
+    dotNode.classList.remove("is-connected", "is-connecting", "is-disconnected");
     if (mode === "connected") {
-      pill.classList.add("is-connected");
+      dotNode.classList.add("is-connected");
     } else if (mode === "disconnected") {
-      pill.classList.add("is-disconnected");
+      dotNode.classList.add("is-disconnected");
     } else {
-      pill.classList.add("is-connecting");
+      dotNode.classList.add("is-connecting");
     }
-    textNode.textContent = labelText;
+    if (labelText) {
+      dotNode.title = labelText;
+    }
+    if (textNode) {
+      textNode.textContent = "Telemetría y Estadísticas de Proyectos";
+    }
   }
 
   function applyDeltaClass(badgeNode, value) {
@@ -184,11 +196,10 @@
         state.selectedProfileIds.delete(id);
       }
     }
-    if (!state.initializedProfiles || state.selectedProfileIds.size === 0) {
+    if (!state.userCustomizedSelection || state.selectedProfileIds.size === 0) {
       for (const id of allIds) {
         state.selectedProfileIds.add(id);
       }
-      state.initializedProfiles = true;
     }
   }
 
@@ -207,6 +218,9 @@
     }
     let count = 0;
     for (const platKey of Object.keys(profileObj.platforms)) {
+      if (platKey === "crypto") {
+        continue;
+      }
       const summary = profileObj.platforms[platKey];
       if (summary && Array.isArray(summary.accounts)) {
         count += summary.accounts.length;
@@ -323,6 +337,7 @@
       if (profileId === ALL_PROFILES_ID) {
         return;
       }
+      state.userCustomizedSelection = true;
       const allIds = Object.keys(state.profiles);
       if (state.selectedProfileIds.has(profileId)) {
         if (state.selectedProfileIds.size > 1) {
@@ -331,9 +346,13 @@
           for (const id of allIds) {
             state.selectedProfileIds.add(id);
           }
+          state.userCustomizedSelection = false;
         }
       } else {
         state.selectedProfileIds.add(profileId);
+        if (state.selectedProfileIds.size === allIds.length) {
+          state.userCustomizedSelection = false;
+        }
       }
       renderAll();
     });
@@ -341,11 +360,99 @@
     return btn;
   }
 
+  function buildAccountUrl(platKey, acc) {
+    const rawHandle = String(acc.handle || acc.account_key || "")
+      .trim()
+      .replace(/^@/, "");
+    const instance = acc.instance
+      ? String(acc.instance)
+          .trim()
+          .replace(/^https?:\/\//, "")
+          .replace(/\/+$/, "")
+      : "";
+
+    switch (platKey) {
+      case "youtube":
+        if (acc.handle) {
+          return `https://www.youtube.com/@${rawHandle}`;
+        }
+        return `https://www.youtube.com/channel/${acc.id || acc.account_key}`;
+      case "twitch":
+        return `https://www.twitch.tv/${rawHandle}`;
+      case "github":
+        return `https://github.com/${rawHandle}`;
+      case "gitlab":
+        return `https://${instance || "gitlab.com"}/${rawHandle}`;
+      case "twitter":
+        return `https://x.com/${rawHandle}`;
+      case "instagram":
+        return `https://www.instagram.com/${rawHandle}/`;
+      case "telegram":
+        return `https://t.me/${rawHandle}`;
+      case "tiktok":
+        return `https://www.tiktok.com/@${rawHandle}`;
+      case "facebook":
+        return `https://www.facebook.com/${rawHandle}/`;
+      case "mastodon":
+        return `https://${instance || "mastodon.social"}/@${rawHandle}`;
+      case "bluesky":
+        return `https://bsky.app/profile/${rawHandle}`;
+      case "linkedin":
+        if (acc.account_type === "organization") {
+          return `https://www.linkedin.com/company/${rawHandle}/`;
+        }
+        return `https://www.linkedin.com/in/${rawHandle}/`;
+      default:
+        return `https://raupulus.dev/social/`;
+    }
+  }
+
+  async function copyToClipboard(text, btnNode) {
+    if (!text) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand("copy");
+        document.body.removeChild(area);
+      }
+      if (btnNode) {
+        btnNode.classList.add("is-copied");
+        btnNode.title = "¡Enlace copiado!";
+        window.setTimeout(() => {
+          btnNode.classList.remove("is-copied");
+          btnNode.title = "Copiar enlace al portapapeles";
+        }, 1600);
+      }
+    } catch {
+      // Clipboard write denied or unavailable
+    }
+  }
+
+  function createPlatformIconNode(iconSlug, altLabel) {
+    const img = document.createElement("img");
+    img.className = "platform-icon-img";
+    img.src = `/images/platforms/${iconSlug}.webp`;
+    img.width = 32;
+    img.height = 32;
+    img.alt = altLabel || "";
+    img.decoding = "async";
+    return img;
+  }
+
   function collectDeduplicatedAccountsByPlatform(profilesList) {
     const byPlatform = {};
     for (const prof of profilesList) {
       if (!prof || !prof.platforms) continue;
       for (const [plat, summary] of Object.entries(prof.platforms)) {
+        if (plat === "crypto") continue;
         if (!byPlatform[plat]) {
           byPlatform[plat] = new Map();
         }
@@ -357,6 +464,26 @@
       }
     }
     return byPlatform;
+  }
+
+  function collectGlobalCryptoAccounts() {
+    const cryptoMap = new Map();
+    if (state.globalCrypto && Array.isArray(state.globalCrypto.accounts)) {
+      for (const acc of state.globalCrypto.accounts) {
+        if (acc && acc.account_key) {
+          cryptoMap.set(acc.account_key, acc);
+        }
+      }
+    }
+    for (const prof of Object.values(state.profiles)) {
+      if (!prof || !prof.platforms || !prof.platforms.crypto) continue;
+      for (const acc of prof.platforms.crypto.accounts || []) {
+        if (acc && acc.account_key && !cryptoMap.has(acc.account_key)) {
+          cryptoMap.set(acc.account_key, acc);
+        }
+      }
+    }
+    return cryptoMap;
   }
 
   function renderSocialSection(activeProfiles, byPlatform) {
@@ -621,7 +748,7 @@
     const header = el("header", "platform-card-header");
     const titleGroup = el("div", "platform-title-group");
     titleGroup.append(
-      el("span", "platform-badge-code", meta.code),
+      createPlatformIconNode(platKey, meta.name),
       el("h3", "platform-name", meta.name)
     );
 
@@ -733,7 +860,27 @@
     const accountsList = el("footer", "platform-accounts-list");
     for (const acc of accounts) {
       const row = el("div", "account-row");
-      const labelGroup = el("div", "account-label-group");
+      const leftCluster = el("div", "account-left-cluster");
+      const accountUrl = buildAccountUrl(platKey, acc);
+
+      const copyBtn = el("button", "account-copy-btn icon");
+      copyBtn.type = "button";
+      copyBtn.title = "Copiar enlace al portapapeles";
+      copyBtn.setAttribute(
+        "aria-label",
+        `Copiar enlace de ${acc.label || acc.handle || acc.account_key}`
+      );
+      copyBtn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        copyToClipboard(accountUrl, copyBtn);
+      });
+
+      const linkNode = el("a", "account-link account-label-group");
+      linkNode.href = accountUrl;
+      linkNode.target = "_blank";
+      linkNode.rel = "noopener noreferrer";
+      linkNode.title = `Abrir ${accountUrl} en una pestaña nueva`;
+
       const rawHandle = acc.handle ? String(acc.handle).replace(/^@/, "") : acc.account_key;
       const handleDisplay =
         platKey === "gitlab" && acc.instance
@@ -741,10 +888,12 @@
           : platKey === "telegram"
             ? `t.me/${rawHandle}`
             : `@${rawHandle}`;
-      labelGroup.append(
+      linkNode.append(
         el("span", "account-title", acc.label || acc.handle || acc.account_key),
         el("span", "account-handle", handleDisplay)
       );
+      leftCluster.append(copyBtn, linkNode);
+
       const m = acc.metrics || {};
       let pillMetricText = `${formatInt(m.followers_total)} seg.`;
       if ((platKey === "github" || platKey === "gitlab") && m.stars_total !== null && m.stars_total !== undefined) {
@@ -755,7 +904,7 @@
         pillMetricText = `LIVE · ${formatInt(m.live_viewers)} esp.`;
       }
       const metricPill = el("code", "account-metric-pill", pillMetricText);
-      row.append(labelGroup, metricPill);
+      row.append(leftCluster, metricPill);
       accountsList.append(row);
     }
 
@@ -772,17 +921,17 @@
     return cell;
   }
 
-  function renderCryptoSection(byPlatform) {
+  function renderCryptoSection() {
     const grid = document.getElementById("crypto-spot-grid");
     if (!grid) return;
 
-    const cryptoMap = byPlatform.crypto;
+    const cryptoMap = collectGlobalCryptoAccounts();
     if (!cryptoMap || cryptoMap.size === 0) {
       grid.replaceChildren(
         el(
           "div",
           "empty-state-box",
-          "Sin activos cripto configurados en el ámbito seleccionado."
+          "Sin activos cripto configurados globalmente."
         )
       );
       return;
@@ -792,12 +941,13 @@
     for (const acc of cryptoMap.values()) {
       const m = acc.metrics || {};
       const symbol = String(acc.handle || acc.account_key || "").toUpperCase();
+      const iconSlug = symbol.toLowerCase();
       const card = el("article", "crypto-card");
 
       const header = el("div", "platform-card-header");
       const titleGroup = el("div", "platform-title-group");
       titleGroup.append(
-        el("span", "platform-badge-code", symbol),
+        createPlatformIconNode(iconSlug, acc.label || symbol),
         el("h3", "platform-name", acc.label || symbol)
       );
 
@@ -845,10 +995,14 @@
     const statusPill = document.getElementById("kc-status-pill");
 
     const kcMap = byPlatform.keycounter;
-    if (!kcMap || kcMap.size === 0) {
-      if (pulsationsNode) pulsationsNode.textContent = "—";
-      if (clicksNode) clicksNode.textContent = "—";
-      if (statusPill) statusPill.textContent = "SIN CUENTA EN PERFIL";
+    const hasKc = Boolean(kcMap && kcMap.size > 0);
+    state.hasActiveKeycounter = hasKc;
+
+    if (!hasKc) {
+      if (state.selectedCategory === "keycounter") {
+        state.selectedCategory = "all";
+      }
+      renderCategoryVisibility();
       return;
     }
 
@@ -877,12 +1031,14 @@
     if (statusPill) {
       statusPill.textContent = "ACUMULADO HISTÓRICO";
     }
+    renderCategoryVisibility();
   }
 
   function renderCategoryVisibility() {
     const secSocial = document.getElementById("section-social");
     const secCrypto = document.getElementById("section-crypto");
     const secKc = document.getElementById("section-keycounter");
+    const kcPill = document.getElementById("filter-pill-keycounter");
 
     const cat = state.selectedCategory;
     if (secSocial) {
@@ -892,7 +1048,11 @@
       secCrypto.classList.toggle("is-hidden", cat !== "all" && cat !== "crypto");
     }
     if (secKc) {
-      secKc.classList.toggle("is-hidden", cat !== "all" && cat !== "keycounter");
+      const hideKc = !state.hasActiveKeycounter || (cat !== "all" && cat !== "keycounter");
+      secKc.classList.toggle("is-hidden", hideKc);
+    }
+    if (kcPill) {
+      kcPill.classList.toggle("is-hidden", !state.hasActiveKeycounter);
     }
 
     const buttons = document.querySelectorAll(".filter-pill[data-category]");
@@ -926,58 +1086,89 @@
   }
 
   function renderAll() {
-    renderCategoryVisibility();
     renderProfileSelectorCards();
     const activeProfiles = getActiveProfilesList();
     const byPlatform = collectDeduplicatedAccountsByPlatform(activeProfiles);
     renderSocialSection(activeProfiles, byPlatform);
-    renderCryptoSection(byPlatform);
+    renderCryptoSection();
     renderKeycounterSection(byPlatform);
+    renderCategoryVisibility();
     renderTelemetrySpecRow();
   }
 
   function applyMetricUpdateToState(data) {
-    if (!data || !data.profile_id || !data.platform) {
+    if (!data || !data.platform) {
       return;
     }
-    const pid = data.profile_id;
+    const pid = data.profile_id || "global";
     const plat = data.platform;
-    if (!state.profiles[pid]) {
-      state.profiles[pid] = {
-        profile_id: pid,
-        name: pid,
-        description: "",
-        platforms: {},
-      };
-      state.selectedProfileIds.add(pid);
-    }
-    if (data.platform_summary) {
-      const prevSummary = state.profiles[pid].platforms[plat];
-      const prevAccounts =
-        prevSummary && Array.isArray(prevSummary.accounts)
-          ? prevSummary.accounts
+
+    if (plat === "crypto") {
+      if (data.platform_summary) {
+        const prevAccounts =
+          state.globalCrypto && Array.isArray(state.globalCrypto.accounts)
+            ? state.globalCrypto.accounts
+            : [];
+        const incomingAccounts = Array.isArray(data.platform_summary.accounts)
+          ? data.platform_summary.accounts
           : [];
-      const incomingAccounts = Array.isArray(data.platform_summary.accounts)
-        ? data.platform_summary.accounts
-        : [];
-      let mergedAccounts = incomingAccounts;
-      if (mergedAccounts.length === 0 && prevAccounts.length > 0) {
-        mergedAccounts = prevAccounts.slice();
+        let mergedAccounts =
+          incomingAccounts.length > 0 ? incomingAccounts : prevAccounts.slice();
+        if (data.account && data.account.account_key) {
+          const idx = mergedAccounts.findIndex(
+            (a) => a && a.account_key === data.account.account_key
+          );
+          if (idx >= 0) {
+            mergedAccounts[idx] = data.account;
+          } else {
+            mergedAccounts.push(data.account);
+          }
+        }
+        state.globalCrypto = {
+          ...data.platform_summary,
+          accounts: mergedAccounts,
+        };
       }
-      if (data.account && data.account.account_key) {
-        const idx = mergedAccounts.findIndex(
-          (a) => a && a.account_key === data.account.account_key
-        );
-        if (idx >= 0) {
-          mergedAccounts[idx] = data.account;
-        } else {
-          mergedAccounts.push(data.account);
+    } else if (pid !== "global") {
+      if (!state.profiles[pid]) {
+        state.profiles[pid] = {
+          profile_id: pid,
+          name: pid,
+          description: "",
+          platforms: {},
+        };
+        if (!state.userCustomizedSelection) {
+          state.selectedProfileIds.add(pid);
         }
       }
-      state.profiles[pid].platforms[plat] = {
-        ...data.platform_summary,
-        accounts: mergedAccounts,
-      };
+      if (data.platform_summary) {
+        const prevSummary = state.profiles[pid].platforms[plat];
+        const prevAccounts =
+          prevSummary && Array.isArray(prevSummary.accounts)
+            ? prevSummary.accounts
+            : [];
+        const incomingAccounts = Array.isArray(data.platform_summary.accounts)
+          ? data.platform_summary.accounts
+          : [];
+        let mergedAccounts = incomingAccounts;
+        if (mergedAccounts.length === 0 && prevAccounts.length > 0) {
+          mergedAccounts = prevAccounts.slice();
+        }
+        if (data.account && data.account.account_key) {
+          const idx = mergedAccounts.findIndex(
+            (a) => a && a.account_key === data.account.account_key
+          );
+          if (idx >= 0) {
+            mergedAccounts[idx] = data.account;
+          } else {
+            mergedAccounts.push(data.account);
+          }
+        }
+        state.profiles[pid].platforms[plat] = {
+          ...data.platform_summary,
+          accounts: mergedAccounts,
+        };
+      }
     }
 
     state.flashedCardKey = `${pid}:${plat}`;
@@ -1024,7 +1215,7 @@
       state.reconnectTimer = null;
     }
 
-    setWsConnectionStatus("connecting", "CONECTANDO STREAM…");
+    setWsConnectionStatus("connecting", "Conectando stream en tiempo real…");
 
     let socket;
     try {
@@ -1037,7 +1228,7 @@
 
     socket.addEventListener("open", () => {
       state.reconnectAttempt = 0;
-      setWsConnectionStatus("connected", "STREAM EN VIVO · /ws/public");
+      setWsConnectionStatus("connected", "Stream activo en tiempo real (/ws/public)");
     });
 
     socket.addEventListener("message", (event) => {
@@ -1060,6 +1251,9 @@
       }
 
       if (envelope.event === "snapshot" && envelope.data) {
+        if (envelope.data.crypto && typeof envelope.data.crypto === "object") {
+          state.globalCrypto = envelope.data.crypto;
+        }
         if (envelope.data.profiles && typeof envelope.data.profiles === "object") {
           state.profiles = envelope.data.profiles;
         } else if (envelope.data.profile_id) {
@@ -1079,7 +1273,7 @@
     });
 
     socket.addEventListener("close", () => {
-      setWsConnectionStatus("disconnected", "RECONECTANDO STREAM…");
+      setWsConnectionStatus("disconnected", "Desconectado · Reconectando stream…");
       scheduleReconnect();
     });
 

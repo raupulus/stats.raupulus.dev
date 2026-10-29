@@ -9,9 +9,10 @@ Especificación visual definitiva para la web pública (`public/`) y clientes de
 1. **Sobriedad técnica y profesional:** Sin efectos estridentes ni neones saturados; predominan los azules abisales (`#050f1c`, `#091421`, `#121c2a`) con acentos en azul acero luminoso (`#a3c9ff`, `#3272b8`) y cian técnico (`#4cd6ff`, `#007a96`).
 2. **Superficies con haz de luz diagonal especular:** Los paneles y tablas de telemetría emplean un gradiente diagonal sutil (`125deg`) que simula un reflejo de cristal técnico sobre fondo marino profundo, enmarcado por un borde de `1px` con brillo cian/azul controlado.
 3. **Jerarquía de lectura instantánea («Glanceable UI»):**
-   - Cabecera superior con estado del enlace WebSocket en tiempo real (`/ws/public`) y marca de tiempo UTC.
-   - Bloque **«ÁMBITO DE SUPERVISIÓN»** con píldora derecha `Contexto activo: <Perfil>` y tarjetas selectoras de perfil agrupadas con insignia `✓ ACTIVO`.
-   - Bloques modulares diferenciados: **Resumen de Redes Sociales**, **Cotización Cripto Spot (USD / EUR)**, **Keycounter (Acumulado Histórico)** y **Tabla de Especificaciones / Flujo de Telemetría**.
+   - Cabecera superior con punto luminoso de estado de conexión WebSocket antes de «Telemetría y Estadísticas de Proyectos» y píldoras de filtro de categoría.
+   - Bloque **«ÁMBITO DE SUPERVISIÓN»** con todos los perfiles seleccionados por defecto (`✓ ACTIVO`) y píldora derecha `Contexto activo: <Perfiles>`.
+   - Bloques modulares diferenciados: **Resumen de Redes Sociales y Forjas Git** (con iconos `.webp` oficiales 64x64@2x y pie con botón de copiado al portapapeles + enlace externo), **Cotización Cripto Spot Global (USD / EUR)**, **Keycounter (Acumulado Histórico por Perfil, oculto automáticamente cuando el perfil seleccionado no tiene cuenta)** y **Tabla de Especificaciones / Flujo de Telemetría**.
+   - Pie de página con la marca de tiempo de **Última actualización** formateada en la zona horaria local del navegador.
 
 ---
 
@@ -116,9 +117,9 @@ Todos los clientes web (`public/css/styles.css`) deben declarar y utilizar exact
   - `docs/images/gitlab-avatar-192x192.png` (avatar 192x192 px con transparencia para GitLab).
   - `docs/images/github-social-preview-1280x640.png` (social preview card 1280x640 px para GitHub).
   - `docs/images/banner.webp` (banner ligero optimizado WebP para `README.md`).
-- **Redes Sociales, Forjas Git y Streaming:** Muestra seguidores/suscriptores totales, $\Delta_{24h}$, publicaciones/repositorios totales, estrellas y forks acumulados (`GitHub`, `GitLab`), estado de emisión en directo y espectadores (`Twitch`), suscriptores y vistas del último mensaje (`Telegram`), seguidores/Me gusta (`Facebook`), visualizaciones y desglose por canal/cuenta.
-- **Criptomonedas (`BTC`, `ADA`):** Muestra cotización spot en vivo tanto en **USD (`$`)** como en **EUR (`€`)**, variación porcentual 24h y rango máximo/mínimo 24h.
-- **Keycounter (Privacidad de Actividad Reciente):** En la web pública se muestran **única y exclusivamente los totales históricos acumulados** (`pulsations_total` y `clicks_total`). Nunca se renderizan ni reciben contadores de «hoy» ni de «última hora».
+- **Redes Sociales, Forjas Git y Streaming:** Muestra el icono `.webp` optimizado (`32x32` CSS / `64x64` Retina lossless en `public/images/platforms/<plataforma>.webp`) en la cabecera de cada tarjeta, seguidores/suscriptores totales, $\Delta_{24h}$, publicaciones/repositorios totales, estrellas y forks acumulados (`GitHub`, `GitLab`), estado de emisión en directo y espectadores (`Twitch`), suscriptores y vistas del último mensaje (`Telegram`), seguidores/Me gusta (`Facebook`), visualizaciones y pie de tarjeta con botón de copiado rápido al portapapeles y enlace directo (`target="_blank"`) a cada cuenta/canal.
+- **Criptomonedas Globales (`BTC`, `ADA`):** Configuradas a nivel global (independientes del perfil seleccionado). Muestra icono `.webp` (`btc.webp`, `ada.webp`), cotización spot en vivo tanto en **USD (`$`)** como en **EUR (`€`)**, variación porcentual 24h y rango máximo/mínimo 24h.
+- **Keycounter (Privacidad de Actividad Reciente y Ocultación Condicional):** Asociado a cada perfil. Si los perfiles seleccionados no tienen cuenta de Keycounter configurada, la sección completa (`#section-keycounter`) y su píldora de filtro (`#filter-pill-keycounter`) se ocultan automáticamente. Cuando está presente, en la web pública se muestran **única y exclusivamente los totales históricos acumulados** (`pulsations_total` y `clicks_total`). Nunca se renderizan ni reciben contadores de «hoy» ni de «última hora».
 - **Seguridad DOM:** Prohibido el uso de `innerHTML`, `outerHTML` o `document.write`. Toda actualización del DOM se realiza con `document.createElement` y `textContent`.
 
 ---

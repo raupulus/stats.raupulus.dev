@@ -21,9 +21,9 @@
       <div class="brand-identity">
         <img src="/logo.svg" alt="Logotipo de stats.raupulus.dev" class="brand-logo" width="46" height="46">
         <div>
-          <div class="brand-kicker">
-            <span class="brand-pulse" aria-hidden="true"></span>
-            <span>TELEMETRY NODE · READ-ONLY STREAM</span>
+          <div class="brand-kicker" aria-live="polite">
+            <span id="ws-status-dot" class="brand-status-dot is-connecting" title="Conectando stream…"></span>
+            <span id="ws-status-text">Telemetría y Estadísticas de Proyectos</span>
           </div>
           <h1 class="brand-title">stats.raupulus.dev</h1>
         </div>
@@ -39,21 +39,10 @@
         <button type="button" class="filter-pill" data-category="crypto" aria-pressed="false">
           Cripto Spot
         </button>
-        <button type="button" class="filter-pill" data-category="keycounter" aria-pressed="false">
+        <button type="button" id="filter-pill-keycounter" class="filter-pill" data-category="keycounter" aria-pressed="false">
           Keycounter
         </button>
       </nav>
-
-      <div class="ws-status-cluster" aria-live="polite">
-        <div id="ws-status-pill" class="ws-status-pill is-connecting">
-          <span id="ws-status-dot" class="ws-status-dot"></span>
-          <span id="ws-status-text">CONECTANDO STREAM…</span>
-        </div>
-        <div class="sync-clock">
-          <span>Sincronizado:</span>
-          <code id="last-sync-time">--:--:-- UTC</code>
-        </div>
-      </div>
     </div>
   </header>
 
@@ -244,6 +233,9 @@
     <div class="container footer-inner">
       <span>
         Arquitectura Unidireccional Read-Only · <a href="https://raupulus.dev" target="_blank" rel="noopener noreferrer">raupulus.dev</a>
+      </span>
+      <span class="footer-sync-status">
+        Última actualización: <code id="last-sync-time">--:--:--</code>
       </span>
       <span>Contacto público: <code>public@raupulus.dev</code></span>
     </div>
