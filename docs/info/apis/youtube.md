@@ -29,7 +29,7 @@ Integración en el proyecto con Google YouTube Data API v3 para recolección mul
 
 ## 4. Estado de Verificación Empírica
 - Contrato y parseo verificados mediante mocks HTTP deterministas (`respx`) en `tests/unit/collectors/test_youtube.py`.
-- Peticiones en vivo contra `googleapis.com` con `YOUTUBE_API_KEY` real: `⚠️ sin verificar` en este entorno de desarrollo local.
+- Peticiones en vivo contra `googleapis.com` con `YOUTUBE_API_KEY`: Verificado `200 OK` (resolución de handle `@handle` a `channel_id` `UC...`, recolección de `subscriberCount`, `viewCount` y `videoCount`).
 
 ---
-> Creado: 2026-10-28 · Última revisión: 2026-10-28
+> Creado: 2026-10-28 · Última revisión: 2026-10-29
