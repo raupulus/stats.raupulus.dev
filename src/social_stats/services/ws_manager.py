@@ -164,6 +164,12 @@ class WSManager:
                     for pid, prof in gstats.profiles.items()
                 }
             }
+            if sub.platform is None or sub.platform == Platform.CRYPTO:
+                crypto_summary = self.aggregator.get_global_crypto_summary(
+                    public_only=sub.is_public
+                )
+                if crypto_summary.accounts:
+                    data["crypto"] = crypto_summary.model_dump(mode="json")
 
         envelope = WSEventEnvelope(
             event=WSEventType.SNAPSHOT,
@@ -210,6 +216,8 @@ class WSManager:
                 acc_cfgs,
                 public_only=True,
             )
+        elif update_data.profile_id == "global" and update_data.platform == Platform.CRYPTO:
+            public_summary = self.aggregator.get_global_crypto_summary(public_only=True)
         else:
             public_summary = update_data.platform_summary.model_copy(
                 update={

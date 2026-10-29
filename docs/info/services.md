@@ -32,6 +32,7 @@ Servicios de coordinación del núcleo: agregación multiperfil (`ProfileAggrega
 ## 4. Puntos de entrada (Auth, permisos y límites)
 - `ProfileAggregator.get_profile_stats(profile_id, platform_filter=None, public_only=False)`
 - `ProfileAggregator.get_global_stats(profile_filter=None, platform_filter=None, public_only=False)`
+- `ProfileAggregator.get_global_crypto_summary(public_only=False)`
 - `ProfileAggregator.get_profiles_catalog(public_only=False)`
 - `ProfileAggregator.is_account_public(profile_id, platform, account_key)`
 - `ProfileAggregator.get_crypto_prices(symbol_filter=None)`

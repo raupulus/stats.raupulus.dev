@@ -33,7 +33,7 @@ Sistema de configuración tipado del servidor: carga y validación de variables 
 - `ProfileConfig`:
   - `profile_id` (slug `^[a-z0-9_-]+$`), `name`, `description`, `enabled` (alias `enable`), `public`, `interval_minutes` (intervalo por defecto opcional para las cuentas del perfil), `accounts: dict[str, list[AccountConfig]]`.
 - `ProfilesRegistry`:
-  - `version`, `profiles: dict[str, ProfileConfig]`.
+  - `version`, `crypto: list[AccountConfig]` (activos cripto globales independientes de los perfiles), `profiles: dict[str, ProfileConfig]`.
 
 ---
 

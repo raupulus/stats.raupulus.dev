@@ -32,7 +32,7 @@ def test_load_example_profiles_config() -> None:
     assert raupulus.accounts["mastodon"][0].account_key == "raupulus@mastodon.social"
     assert raupulus.accounts["bluesky"][0].account_key == "raupulus.dev"
     assert raupulus.accounts["linkedin"][0].enabled is False
-    assert [c.account_key for c in raupulus.accounts["crypto"]] == ["btc", "ada"]
+    assert [c.account_key for c in registry.crypto] == ["btc", "ada"]
     assert [k.account_key for k in raupulus.accounts["keycounter"]] == ["raupulus"]
     assert raupulus.accounts["keycounter"][0].interval_minutes == 1
     assert raupulus.accounts["keycounter"][0].get_poll_interval_seconds(300) == 60

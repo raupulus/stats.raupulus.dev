@@ -1,9 +1,23 @@
 {
   "version": "1.0",
+  "crypto": [
+    {
+      "handle": "BTC",
+      "label": "Bitcoin (BTC)",
+      "enable": true,
+      "interval_minutes": 1
+    },
+    {
+      "handle": "ADA",
+      "label": "Cardano (ADA)",
+      "enable": true,
+      "interval_minutes": 1
+    }
+  ],
   "profiles": {
     "raupulus": {
       "name": "Perfil Personal (raupulus)",
-      "description": "Redes sociales principales, canales de contenido, keycounter y cripto",
+      "description": "Redes sociales principales, canales de contenido y keycounter",
       "enable": true,
       "public": true,
       "accounts": {
@@ -121,20 +135,6 @@
             "handle": "raupulus",
             "label": "Keycounter Principal (Teclado + Ratón)",
             "credentials_ref": "MAIN",
-            "enable": true,
-            "interval_minutes": 1
-          }
-        ],
-        "crypto": [
-          {
-            "handle": "BTC",
-            "label": "Bitcoin (BTC)",
-            "enable": true,
-            "interval_minutes": 1
-          },
-          {
-            "handle": "ADA",
-            "label": "Cardano (ADA)",
             "enable": true,
             "interval_minutes": 1
           }

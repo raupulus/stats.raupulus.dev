@@ -356,6 +356,22 @@ class ProfileAggregator:
 
         return ProfilesCatalogResponse(generated_at=ts, profiles=items)
 
+    def get_global_crypto_summary(
+        self,
+        *,
+        public_only: bool = False,
+    ) -> PlatformSummary:
+        """Build global PlatformSummary for all configured crypto assets."""
+        unique_crypto = self.registry.get_unique_accounts_by_platform(
+            only_enabled=not public_only,
+            only_public=public_only,
+        ).get(Platform.CRYPTO.value, [])
+        return self.build_platform_summary(
+            Platform.CRYPTO,
+            unique_crypto,
+            public_only=public_only,
+        )
+
     def is_account_public(
         self,
         profile_id: str,
@@ -363,6 +379,11 @@ class ProfileAggregator:
         account_key: str,
     ) -> bool:
         """Return True if the profile and the specific account within it are enabled and public."""
+        if profile_id == "global" and platform == Platform.CRYPTO:
+            for acc in self.registry.crypto:
+                if acc.account_key == account_key and acc.enabled and acc.public:
+                    return True
+            return False
         pconfig = self.registry.get_profile(profile_id)
         if pconfig is None or not pconfig.enable or not pconfig.public:
             return False
@@ -380,6 +401,10 @@ class ProfileAggregator:
             for acc in pconfig.accounts.get(str(platform), []):
                 if acc.enabled and acc.account_key == account_key:
                     matches.append((pid, acc))
+        if platform == Platform.CRYPTO and not matches:
+            for acc in self.registry.crypto:
+                if acc.enabled and acc.account_key == account_key:
+                    matches.append(("global", acc))
         return matches
 
     def get_collectors_health(self) -> dict[Platform, CollectorHealthSummary]:

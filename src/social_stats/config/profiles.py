@@ -265,11 +265,12 @@ class ProfilesRegistry(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     version: str = "1.0"
+    crypto: list[AccountConfig] = Field(default_factory=list)
     profiles: dict[str, ProfileConfig]
 
     @model_validator(mode="after")
     def validate_profiles_map(self) -> ProfilesRegistry:
-        """Ensure profile_id keys are valid slugs and propagate profile_id into ProfileConfig."""
+        """Ensure profile_id keys are valid slugs, propagate profile_id, and normalize global crypto."""
         if not self.profiles:
             raise ValueError("At least one profile must be defined in 'profiles'")
 
@@ -281,6 +282,23 @@ class ProfilesRegistry(BaseModel):
                 )
             updated_profiles[pid] = pconfig.model_copy(update={"profile_id": pid})
         self.profiles = updated_profiles
+
+        seen_crypto: set[str] = set()
+        normalized_crypto: list[AccountConfig] = []
+        for acc in self.crypto:
+            key = acc.compute_account_key("crypto")
+            if key in seen_crypto:
+                raise ValueError(f"Duplicate global crypto asset '{key}'")
+            seen_crypto.add(key)
+            normalized_crypto.append(
+                acc.model_copy(
+                    update={
+                        "platform": "crypto",
+                        "account_key": key,
+                    }
+                )
+            )
+        self.crypto = normalized_crypto
         return self
 
     def get_profile(self, profile_id: str) -> ProfileConfig | None:
@@ -299,6 +317,14 @@ class ProfilesRegistry(BaseModel):
         and keeps the shortest configured interval_minutes.
         """
         result: dict[str, dict[str, AccountConfig]] = {}
+        for acc in self.crypto:
+            if only_enabled and not acc.enabled:
+                continue
+            if only_public and not acc.public:
+                continue
+            crypto_bucket = result.setdefault("crypto", {})
+            crypto_bucket[acc.account_key] = acc
+
         for profile in self.profiles.values():
             for platform, accounts in profile.accounts.items():
                 for acc in accounts:

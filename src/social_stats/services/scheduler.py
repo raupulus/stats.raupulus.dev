@@ -213,12 +213,19 @@ class CollectorScheduler:
             if outcome.diff.has_changes and self.on_metric_update is not None:
                 affected = self.aggregator.get_profiles_referencing_account(platform, key)
                 for profile_id, profile_acc_cfg in affected:
-                    pstats = self.aggregator.get_profile_stats(
-                        profile_id, platform_filter=platform, now=ts
-                    )
-                    if pstats is None or platform not in pstats.platforms:
-                        continue
-                    summary = pstats.platforms[platform].model_copy(update={"accounts": []})
+                    if profile_id == "global" and platform == Platform.CRYPTO:
+                        summary = self.aggregator.get_global_crypto_summary().model_copy(
+                            update={"accounts": []}
+                        )
+                    else:
+                        pstats = self.aggregator.get_profile_stats(
+                            profile_id, platform_filter=platform, now=ts
+                        )
+                        if pstats is None or platform not in pstats.platforms:
+                            continue
+                        summary = pstats.platforms[platform].model_copy(
+                            update={"accounts": []}
+                        )
                     account_for_profile = outcome.state.model_copy(
                         update={
                             "handle": profile_acc_cfg.handle or outcome.state.handle,
