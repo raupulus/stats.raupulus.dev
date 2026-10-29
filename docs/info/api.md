@@ -79,6 +79,7 @@ Capa de exposición Read-Only con arquitectura de seguridad diferenciada en 3 ca
 ## 7. Trampas conocidas y consideraciones de diseño
 - Si `config/profiles.json` no existe en entorno local de pruebas, `main.py` recurre automáticamente a `config/profiles.yaml` o a las plantillas `config/profiles.example.json` / `config/profiles.example.yaml`.
 - Si `API_BEARER_TOKEN` no está configurado (cadena vacía), todos los endpoints privados (`/api/v1/*`, `/ws/stats`, `/ws/profiles/{id}`) fallan en modo cerrado (*fail-closed*) rechazando cualquier petición.
+- `configure_logging()` eleva explícitamente los loggers internos `httpx` y `httpcore` a nivel `WARNING` para evitar que Uvicorn o Docker impriman en consola las URLs completas de peticiones salientes (como endpoints privados configurados en `.env`).
 
 ---
 
@@ -93,4 +94,4 @@ Capa de exposición Read-Only con arquitectura de seguridad diferenciada en 3 ca
 - Ninguno.
 
 ---
-> Creado: 2026-10-28 · Última revisión: 2026-10-28
+> Creado: 2026-10-28 · Última revisión: 2026-10-29

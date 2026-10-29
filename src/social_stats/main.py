@@ -52,12 +52,14 @@ PUBLIC_CSP_POLICY = (
 
 
 def configure_logging(level: str = "INFO") -> None:
-    """Configure structured UTC logging format."""
+    """Configure structured UTC logging format and silence verbose HTTP client URL logs."""
     logging.basicConfig(
         level=getattr(logging, level.upper(), logging.INFO),
         format="%(asctime)sZ %(levelname)s [%(name)s] %(message)s",
     )
     logging.Formatter.converter = time.gmtime
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
 def build_default_collectors(
