@@ -21,7 +21,7 @@ from social_stats.models.metrics import AccountMetrics, LatestPostMetrics
 from social_stats.storage.snapshot_repo import SnapshotRepository
 
 MAX_GITLAB_PAGES = 20
-_GL_CARD_RE = re.compile(r'class="[^"]*\bgl-card\b', re.IGNORECASE)
+_GL_CARD_RE = re.compile(r'class="(?:[^"]*\s)?gl-card(?:\s[^"]*)?"', re.IGNORECASE)
 
 
 def _parse_iso_datetime(value: str | None) -> datetime | None:

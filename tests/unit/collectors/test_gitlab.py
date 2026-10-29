@@ -28,9 +28,9 @@ async def test_gitlab_public_xhr_followers_fallback_and_projects_aggregation() -
             200,
             json={
                 "html": (
-                    '<div class="gl-card gl-p-4">User 1</div>'
-                    '<div class="gl-card gl-p-4">User 2</div>'
-                    '<div class="gl-card gl-p-4">User 3</div>'
+                    '<div class="gl-card"><div class="gl-card-body gl-flex gl-gap-3">User 1</div></div>'
+                    '<div class="gl-card gl-p-4"><div class="gl-card-body">User 2</div></div>'
+                    '<div class="gl-card"><div class="gl-card-body">User 3</div></div>'
                 )
             },
         )
