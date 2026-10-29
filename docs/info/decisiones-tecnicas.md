@@ -44,11 +44,11 @@ Registro de decisiones técnicas deliberadas del proyecto. Este documento previe
 
 ---
 
-## DT-006: Postergación de Métricas Locales / Pulsaciones de Teclas (Keystrokes)
-- **Fecha:** 2026-10-28
-- **Decisión:** La integración de pulsaciones de teclas (keystrokes) queda pospuesta hasta que las redes sociales estén cerradas y estables. Cuando se aborde, el servidor consumirá los datos directamente desde una base de datos externa acordada sin abrir endpoints de recepción en red.
-- **Motivo:** Mantener el foco en las fuentes sociales y evitar diseños anómalos que violen el principio de solo lectura.
-- **Consecuencia:** No se programan ni modelan endpoints de captura de pulsaciones en la API actual.
+## DT-006: Integración de Pulsaciones de Teclas y Clics vía Keycounter API v2 Desacoplada (Read-Only)
+- **Fecha:** 2026-10-28 (Actualizado: 2026-10-29)
+- **Decisión:** En lugar de abrir endpoints de recepción de pulsaciones en nuestra API (lo que violaría el principio de solo lectura), el servidor actúa exclusivamente como cliente consumidor de la API v2 externa de Keycounter (`KeycounterCollector`), consultando periódicamente el endpoint mediante Bearer Token y sirviendo las métricas hacia la API REST y WebSockets.
+- **Motivo:** Mantener estrictamente el modelo Read-Only en la infraestructura propia sin exponer puntos de ingesta ni recibir pulsaciones directas hacia nuestro servidor.
+- **Consecuencia:** Se implementó `KeycounterCollector` con soporte para totales históricos (`pulsations_total`, `clicks_total`), métricas de hoy y de la última hora. En el canal WebSocket público (`/ws/public`) se aplica redacción estricta para exponer exclusivamente los totales históricos acumulados, garantizando la privacidad horaria del usuario.
 
 ---
 
@@ -78,4 +78,4 @@ Registro de decisiones técnicas deliberadas del proyecto. Este documento previe
 - **Consecuencia:** `Dockerfile` utiliza `http://127.0.0.1:${APP_PORT}/healthz` y cualquier intento de acceder a `/healthz` a través de un proxy inverso externo recibe `403 Forbidden`.
 
 ---
-> Creado: 2026-10-28 · Última revisión: 2026-10-28
+> Creado: 2026-10-28 · Última revisión: 2026-10-29

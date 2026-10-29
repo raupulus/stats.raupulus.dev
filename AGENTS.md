@@ -90,8 +90,7 @@ social-stats-api-websockets/
 │   ├── deploys/
 │   │   └── docker-y-credenciales.md
 │   ├── future/
-│   │   ├── crypto_and_system_metrics.md
-│   │   └── keystrokes.md
+│   │   └── server_metrics.md
 │   ├── images/
 │   │   ├── banner.webp
 │   │   ├── github-social-preview-1280x640.png

@@ -53,4 +53,4 @@ Bienvenido a la documentación técnica **viva** del proyecto. Este directorio c
 | Keycounter | [`apis/keycounter.md`](./apis/keycounter.md) | API v2 privada (`KEYCOUNTER_API_URL`) con Bearer token (pulsaciones y clics). |
 
 ---
-> Creado: 2026-10-28 · Última revisión: 2026-10-28
+> Creado: 2026-10-28 · Última revisión: 2026-10-29
