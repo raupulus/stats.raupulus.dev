@@ -132,6 +132,8 @@ social-stats-api-websockets/
 │   ├── css/
 │   │   └── styles.css
 │   ├── favicon.svg
+│   ├── icon-192.png
+│   ├── icon-192.webp
 │   ├── images/
 │   │   └── platforms/
 │   │       ├── ada.webp
@@ -152,7 +154,11 @@ social-stats-api-websockets/
 │   ├── js/
 │   │   └── app.js
 │   ├── logo.svg
-│   └── robots.txt
+│   ├── og-preview.png
+│   ├── og-preview.webp
+│   ├── robots.txt
+│   ├── site.webmanifest
+│   └── sitemap.xml
 ├── src/
 │   └── social_stats/
 │       ├── __init__.py

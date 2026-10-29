@@ -3,26 +3,113 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Panel público de telemetría y estadísticas en tiempo real de redes sociales, cripto y keycounter — stats.raupulus.dev">
+  <meta name="description" content="Panel público de telemetría y estadísticas en tiempo real de redes sociales, canales, streaming, forjas Git (GitHub, GitLab), cripto spot (BTC, ADA) y Keycounter — stats.raupulus.dev">
+  <meta name="author" content="Raúl Caro Pastorino (@raupulus)">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#091421">
-  <title>stats.raupulus.dev · Telemetría en Tiempo Real</title>
+  <title>stats.raupulus.dev · Telemetría y Estadísticas de Proyectos en Tiempo Real</title>
+
+  <link rel="canonical" href="https://stats.raupulus.dev/">
+  <link rel="manifest" href="/site.webmanifest">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="apple-touch-icon" href="/logo.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+
+  <!-- Open Graph (Facebook, LinkedIn, Telegram, Mastodon, Discord, WhatsApp) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="stats.raupulus.dev">
+  <meta property="og:locale" content="es_ES">
+  <meta property="og:url" content="https://stats.raupulus.dev/">
+  <meta property="og:title" content="stats.raupulus.dev · Telemetría y Estadísticas de Proyectos en Tiempo Real">
+  <meta property="og:description" content="Estadísticas consolidadas en tiempo real de redes sociales, canales de vídeo, streaming, repositorios Open Source (GitHub y GitLab), cotización cripto spot (BTC y ADA) y Keycounter.">
+  <meta property="og:image" content="https://stats.raupulus.dev/og-preview.png">
+  <meta property="og:image:secure_url" content="https://stats.raupulus.dev/og-preview.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta property="og:image:alt" content="Panel de telemetría en tiempo real de stats.raupulus.dev con estadísticas de redes sociales, forjas Git, cripto y Keycounter">
+
+  <!-- Twitter / X Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@raupulus">
+  <meta name="twitter:creator" content="@raupulus">
+  <meta name="twitter:url" content="https://stats.raupulus.dev/">
+  <meta name="twitter:title" content="stats.raupulus.dev · Telemetría y Estadísticas de Proyectos en Tiempo Real">
+  <meta name="twitter:description" content="Estadísticas consolidadas en tiempo real de redes sociales, canales de vídeo, streaming, repositorios Open Source (GitHub y GitLab), cotización cripto spot (BTC y ADA) y Keycounter.">
+  <meta name="twitter:image" content="https://stats.raupulus.dev/og-preview.png">
+  <meta name="twitter:image:alt" content="Panel de telemetría en tiempo real de stats.raupulus.dev con estadísticas de redes sociales, forjas Git, cripto y Keycounter">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
+
+  <!-- Datos estructurados Schema.org (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://stats.raupulus.dev/#website",
+        "url": "https://stats.raupulus.dev/",
+        "name": "stats.raupulus.dev",
+        "description": "Panel público de telemetría y estadísticas en tiempo real de redes sociales, canales, streaming, forjas Git, cripto spot y Keycounter.",
+        "inLanguage": "es-ES",
+        "publisher": {
+          "@id": "https://raupulus.dev/#person"
+        }
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://stats.raupulus.dev/#webapp",
+        "name": "stats.raupulus.dev · Telemetría y Estadísticas de Proyectos",
+        "url": "https://stats.raupulus.dev/",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "inLanguage": "es-ES",
+        "image": "https://stats.raupulus.dev/og-preview.png",
+        "author": {
+          "@id": "https://raupulus.dev/#person"
+        }
+      },
+      {
+        "@type": "Person",
+        "@id": "https://raupulus.dev/#person",
+        "name": "Raúl Caro Pastorino",
+        "alternateName": "raupulus",
+        "url": "https://raupulus.dev/",
+        "sameAs": [
+          "https://raupulus.dev/social/",
+          "https://github.com/raupulus",
+          "https://gitlab.com/raupulus",
+          "https://www.youtube.com/@raupulus",
+          "https://www.twitch.tv/raupulus",
+          "https://x.com/raupulus",
+          "https://www.instagram.com/raupulus/",
+          "https://t.me/raupulus_diffusion",
+          "https://www.tiktok.com/@raupulus",
+          "https://www.facebook.com/raupulus/",
+          "https://mastodon.online/@raupulus",
+          "https://bsky.app/profile/raupulus.bsky.social"
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
+  <a href="#main-content" class="skip-link visually-hidden">Saltar al contenido principal</a>
   <div class="ambient-backdrop" aria-hidden="true"></div>
 
   <header class="top-telemetry-bar">
     <div class="container top-bar-inner">
       <div class="brand-identity">
-        <img src="/logo.svg" alt="Logotipo de stats.raupulus.dev" class="brand-logo" width="46" height="46">
+        <img src="/logo.svg" alt="Logotipo de stats.raupulus.dev" class="brand-logo" width="46" height="46" fetchpriority="high" decoding="async">
         <div>
-          <div class="brand-kicker" aria-live="polite">
-            <span id="ws-status-dot" class="brand-status-dot is-connecting" title="Conectando stream…"></span>
+          <div class="brand-kicker">
+            <span id="ws-status-dot" class="brand-status-dot is-connecting" title="Conectando stream…" aria-hidden="true"></span>
             <span id="ws-status-text">Telemetría y Estadísticas de Proyectos</span>
           </div>
           <h1 class="brand-title">stats.raupulus.dev</h1>
@@ -46,9 +133,15 @@
     </div>
   </header>
 
-  <main class="container dashboard-main">
+  <main id="main-content" class="container dashboard-main" tabindex="-1">
+    <noscript>
+      <div class="noscript-banner">
+        Este panel de telemetría requiere JavaScript activo para conectarse en tiempo real al stream de solo lectura <code>/ws/public</code>.
+      </div>
+    </noscript>
+
     <!-- Bloque 1: Ámbito de Supervisión (Selector de Perfiles con tarjeta ✓ ACTIVO) -->
-    <section class="telemetry-section" aria-labelledby="scope-heading">
+    <section class="telemetry-section">
       <div class="section-header">
         <div>
           <h2 id="scope-heading" class="section-title">ÁMBITO DE SUPERVISIÓN</h2>
@@ -62,13 +155,13 @@
         </div>
       </div>
 
-      <div id="profiles-selector-grid" class="profiles-selector-grid" role="group" aria-label="Selector de perfiles monitorizados">
+      <div id="profiles-selector-grid" class="profiles-selector-grid" role="group" aria-labelledby="scope-heading">
         <!-- Renderizado dinámicamente con createElement + textContent -->
       </div>
     </section>
 
     <!-- Bloque 2: Resumen Global de Impacto Social -->
-    <section id="section-social" class="telemetry-section" aria-labelledby="social-heading">
+    <section id="section-social" class="telemetry-section">
       <div class="section-header">
         <div>
           <h2 id="social-heading" class="section-title">AUDIENCIA, REDES SOCIALES Y FORJAS GIT</h2>
@@ -122,7 +215,7 @@
     </section>
 
     <!-- Bloque 3: Cotización Cripto Spot (USD y EUR) -->
-    <section id="section-crypto" class="telemetry-section" aria-labelledby="crypto-heading">
+    <section id="section-crypto" class="telemetry-section deferred-section">
       <div class="section-header">
         <div>
           <h2 id="crypto-heading" class="section-title">MERCADO CRIPTO SPOT (USD / EUR)</h2>
@@ -142,7 +235,7 @@
     </section>
 
     <!-- Bloque 4: Keycounter (Exclusivamente Totales Históricos Acumulados) -->
-    <section id="section-keycounter" class="telemetry-section" aria-labelledby="keycounter-heading">
+    <section id="section-keycounter" class="telemetry-section deferred-section">
       <div class="section-header">
         <div>
           <h2 id="keycounter-heading" class="section-title">KEYCOUNTER · TELEMETRÍA DE ENTRADA</h2>
@@ -182,7 +275,7 @@
     </section>
 
     <!-- Bloque 5: Tabla de Especificaciones y Flujo de Telemetría (Estilo Haz Diagonal) -->
-    <section class="telemetry-section" aria-labelledby="telemetry-table-heading">
+    <section class="telemetry-section deferred-section">
       <div class="section-header">
         <div>
           <h2 id="telemetry-table-heading" class="section-title">REGISTRO TÉCNICO Y STREAM DE EVENTOS</h2>

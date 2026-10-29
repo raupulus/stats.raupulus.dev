@@ -55,7 +55,7 @@ Todos los clientes web (`public/css/styles.css`) deben declarar y utilizar exact
   /* Texto y bordes */
   --color-on-surface: #d9e3f6;
   --color-on-surface-variant: #c1c7d2;
-  --color-outline: #8b919c;
+  --color-outline: #9ea8b8;
   --color-outline-variant: #414751;
 
   /* Estados semánticos */
@@ -112,11 +112,17 @@ Todos los clientes web (`public/css/styles.css`) deben declarar y utilizar exact
 - Columna izquierda con etiqueta en negrita (`--color-on-surface`) y columna derecha con valores técnicos encapsulados en píldoras monoespaciadas (`background: rgba(5, 15, 28, 0.75); border: 1px solid rgba(76, 214, 255, 0.24); color: var(--color-tertiary)`).
 
 ### 4.3. Reglas de Exposición en la Web Pública (`public/`)
-- **Identidad Visual (`favicon.svg`, `logo.svg` y assets de repositorio):**
+- **Identidad Visual (`favicon.svg`, `logo.svg`, `icon-192.png`/`webp`, `og-preview.png`/`webp` y assets de repositorio):**
   - Emblema isométrico de nodo hexagonal con barras de espectro y anillos concéntricos en los tonos oficiales `#050f1c`, `#091421`, `#3272b8`, `#a3c9ff` y `#4cd6ff`.
+  - `public/og-preview.png` y `public/og-preview.webp` (`1280x640` px para tarjetas OpenGraph y Twitter/X `summary_large_image`).
+  - `public/icon-192.png` y `public/icon-192.webp` (`192x192` px para `site.webmanifest` y `apple-touch-icon`).
   - `docs/images/gitlab-avatar-192x192.png` (avatar 192x192 px con transparencia para GitLab).
   - `docs/images/github-social-preview-1280x640.png` (social preview card 1280x640 px para GitHub).
   - `docs/images/banner.webp` (banner ligero optimizado WebP para `README.md`).
+- **SEO Técnico, W3C, Accesibilidad WCAG AA/AAA y Rendimiento (Lighthouse 100/100):**
+  - Metadatos completos en `public/index.html` (canonical, `robots`, OpenGraph `og:*`, Twitter/X Cards `twitter:*`, `site.webmanifest`, `sitemap.xml` enlazado desde `robots.txt` y datos estructurados Schema.org JSON-LD para `WebSite`, `WebApplication` y `Person`).
+  - Enlace de salto para teclado (`.skip-link.visually-hidden` hacia `<main id="main-content" tabindex="-1">`), contornos `:focus-visible` de alto contraste (`3px solid var(--color-tertiary)`), regiones semánticas sin `aria-labelledby` redundante en `<section>`, e iconos decorativos con `alt=""` junto a encabezados `<h3>` para evitar anuncios duplicados en lectores de pantalla.
+  - Priorización de imagen LCP (`fetchpriority="high"` en `/logo.svg`), `loading="lazy"` en iconos dinámicos de plataforma, diferimiento de pintado fuera de pantalla con `content-visibility: auto` y `contain-intrinsic-size: auto none auto 320px` (`.deferred-section`), y altura mínima reservada en rejillas dinámicas para mantener `CLS = 0`.
 - **Redes Sociales, Forjas Git y Streaming:** Muestra el icono `.webp` optimizado (`32x32` CSS / `64x64` Retina lossless en `public/images/platforms/<plataforma>.webp`) en la cabecera de cada tarjeta, seguidores/suscriptores totales, $\Delta_{24h}$, publicaciones/repositorios totales, estrellas y forks acumulados (`GitHub`, `GitLab`), estado de emisión en directo y espectadores (`Twitch`), suscriptores y vistas del último mensaje (`Telegram`), seguidores/Me gusta (`Facebook`), visualizaciones y pie de tarjeta con botón de copiado rápido al portapapeles y enlace directo (`target="_blank"`) a cada cuenta/canal.
 - **Criptomonedas Globales (`BTC`, `ADA`):** Configuradas a nivel global (independientes del perfil seleccionado). Muestra icono `.webp` (`btc.webp`, `ada.webp`), cotización spot en vivo tanto en **USD (`$`)** como en **EUR (`€`)**, variación porcentual 24h y rango máximo/mínimo 24h.
 - **Keycounter (Privacidad de Actividad Reciente y Ocultación Condicional):** Asociado a cada perfil. Si los perfiles seleccionados no tienen cuenta de Keycounter configurada, la sección completa (`#section-keycounter`) y su píldora de filtro (`#filter-pill-keycounter`) se ocultan automáticamente. Cuando está presente, en la web pública se muestran **única y exclusivamente los totales históricos acumulados** (`pulsations_total` y `clicks_total`). Nunca se renderizan ni reciben contadores de «hoy» ni de «última hora».

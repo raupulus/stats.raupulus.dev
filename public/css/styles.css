@@ -37,7 +37,7 @@
   /* Tipografía y bordes */
   --color-on-surface: #d9e3f6;
   --color-on-surface-variant: #c1c7d2;
-  --color-outline: #8b919c;
+  --color-outline: #9ea8b8;
   --color-outline-variant: #414751;
 
   /* Estados semánticos */
@@ -127,6 +127,51 @@ body {
   margin-inline: auto;
   position: relative;
   z-index: 1;
+}
+
+/* ==========================================================================
+   Accesibilidad WAI-ARIA, Foco de Teclado y Enlace de Salto (Skip Link)
+   ========================================================================== */
+
+.visually-hidden:where(:not(:focus-within, :active)) {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.skip-link:focus-visible {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  padding: 0.55rem 1.05rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-container-lowest);
+  color: var(--color-on-primary-container);
+  border: 2px solid var(--color-tertiary);
+  font-family: var(--font-headline);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: var(--shadow-glow-active);
+}
+
+:where(a:any-link, button):focus-visible {
+  outline: 3px solid var(--color-tertiary);
+  outline-offset: 3px;
+}
+
+.noscript-banner {
+  margin-block: 1rem;
+  padding: 0.9rem 1.2rem;
+  border-radius: var(--radius-md);
+  background: rgba(255, 182, 145, 0.12);
+  border: 1px solid rgba(255, 182, 145, 0.45);
+  color: var(--color-warning);
+  font-size: 0.88rem;
 }
 
 /* ==========================================================================
@@ -281,6 +326,11 @@ body {
   gap: 1.1rem;
 }
 
+.telemetry-section.deferred-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 320px;
+}
+
 .telemetry-section.is-hidden {
   display: none;
 }
@@ -336,6 +386,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
   gap: 1rem;
+  min-height: 118px;
 }
 
 .profile-selector-card {
@@ -893,6 +944,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
   gap: 1.1rem;
+  min-height: 168px;
 }
 
 .crypto-card {

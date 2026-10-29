@@ -1,0 +1,37 @@
+{
+  "name": "stats.raupulus.dev · Telemetría y Estadísticas de Proyectos",
+  "short_name": "stats.raupulus",
+  "description": "Panel público de telemetría y estadísticas en tiempo real de redes sociales, canales, streaming, forjas Git (GitHub, GitLab), cripto spot (BTC, ADA) y Keycounter.",
+  "lang": "es-ES",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050f1c",
+  "theme_color": "#091421",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

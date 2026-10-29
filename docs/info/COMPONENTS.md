@@ -9,7 +9,7 @@ Definición estructural, visual y de accesibilidad de los componentes implementa
 ### 1.1. `TopTelemetryBar` y `DashboardFooter`
 - **Propósito:** Cabecera superior fija/estática que identifica el nodo de telemetría (`stats.raupulus.dev`) y las píldoras de filtro de categoría, complementada por el pie de página con la hora local de última sincronización.
 - **Elementos:**
-  - En la parte superior de la marca (`.brand-kicker`), el texto `Telemetría y Estadísticas de Proyectos` precedido por el punto indicador de estado WebSocket (`#ws-status-dot`: verde conectado `--color-success`, ámbar conectando `--color-warning`, coral desconectado `--color-error`).
+  - En la parte superior de la marca (`.brand-kicker`), el texto `Telemetría y Estadísticas de Proyectos` precedido por el punto indicador de estado WebSocket (`#ws-status-dot`: verde conectado `--color-success`, ámbar conectando `--color-warning`, coral desconectado `--color-error`). Incluye enlace de salto accesible por teclado (`.skip-link.visually-hidden`) hacia `<main id="main-content" tabindex="-1">` y `fetchpriority="high"` en el logotipo principal.
   - Píldoras de filtro rápido por categoría (`Todas las métricas`, `Redes y Forjas`, `Cripto Spot`, y `Keycounter`, esta última oculta automáticamente si el perfil activo no tiene Keycounter asociado).
   - En el `<footer>` (`.dashboard-footer`), el bloque `Última actualización: <code id="last-sync-time">` formateado automáticamente en la zona horaria local del navegador del usuario (`Intl.DateTimeFormat`).
 

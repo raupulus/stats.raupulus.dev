@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -41,7 +42,24 @@ from social_stats.storage.database import Database
 from social_stats.storage.snapshot_repo import SnapshotRepository
 from social_stats.storage.state_store import StateStore
 
+mimetypes.add_type("application/manifest+json", ".webmanifest")
+mimetypes.add_type("image/webp", ".webp")
+
 ALLOWED_READONLY_METHODS: frozenset[str] = frozenset({"GET", "HEAD", "OPTIONS"})
+CACHEABLE_STATIC_PREFIXES: tuple[str, ...] = (
+    "/css/",
+    "/js/",
+    "/images/",
+    "/favicon.svg",
+    "/logo.svg",
+    "/icon-192.png",
+    "/icon-192.webp",
+    "/og-preview.png",
+    "/og-preview.webp",
+    "/site.webmanifest",
+    "/robots.txt",
+    "/sitemap.xml",
+)
 PUBLIC_CSP_POLICY = (
     "default-src 'self'; "
     "connect-src 'self' ws: wss:; "
@@ -307,6 +325,13 @@ def create_app(
             response.headers.setdefault(
                 "Content-Security-Policy", PUBLIC_CSP_POLICY
             )
+        req_path = request.url.path
+        if req_path.startswith(CACHEABLE_STATIC_PREFIXES):
+            response.headers.setdefault(
+                "Cache-Control", "public, max-age=86400"
+            )
+        elif req_path in ("/", "/index.html"):
+            response.headers.setdefault("Cache-Control", "no-cache")
         return response
 
     fastapi_app.include_router(local_health_router)

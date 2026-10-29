@@ -3,3 +3,5 @@ Allow: /
 Disallow: /api/
 Disallow: /ws/
 Disallow: /healthz
+
+Sitemap: https://stats.raupulus.dev/sitemap.xml

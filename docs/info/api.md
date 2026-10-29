@@ -30,6 +30,7 @@ Capa de exposición Read-Only con arquitectura de seguridad diferenciada en 3 ca
 - **Middleware Read-Only y Cabeceras de Seguridad:**
   - Bloquea cualquier método HTTP distinto de `GET`, `HEAD` y `OPTIONS` devolviendo `405 Method Not Allowed`.
   - Inyecta `Content-Security-Policy` (`img-src 'self' data:;`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin` y `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` (en producción).
+  - Aplica `Cache-Control: public, max-age=86400` en activos estáticos (`/css/`, `/js/`, `/images/`, iconos, `site.webmanifest`, `robots.txt`, `sitemap.xml`) y `Cache-Control: no-cache` en `/` (`/index.html`) para preservar la caché de retroceso/avance (`bfcache`) del navegador.
   - Monta automáticamente el directorio estático `public/` en `/` con `follow_symlink=False` cuando está presente para despliegues integrados o locales.
 
 ### 1.2. Qué NO hace

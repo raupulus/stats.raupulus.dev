@@ -441,7 +441,7 @@
     }
   }
 
-  function createPlatformIconNode(iconSlug, altLabel) {
+  function createPlatformIconNode(iconSlug) {
     const safeSlug = String(iconSlug || "")
       .toLowerCase()
       .replace(/[^a-z0-9_-]/g, "");
@@ -450,8 +450,9 @@
     img.src = `/images/platforms/${safeSlug || "youtube"}.webp`;
     img.width = 32;
     img.height = 32;
-    img.alt = altLabel || "";
+    img.alt = "";
     img.decoding = "async";
+    img.loading = "lazy";
     return img;
   }
 
@@ -756,7 +757,7 @@
     const header = el("header", "platform-card-header");
     const titleGroup = el("div", "platform-title-group");
     titleGroup.append(
-      createPlatformIconNode(platKey, meta.name),
+      createPlatformIconNode(platKey),
       el("h3", "platform-name", meta.name)
     );
 
@@ -955,7 +956,7 @@
       const header = el("div", "platform-card-header");
       const titleGroup = el("div", "platform-title-group");
       titleGroup.append(
-        createPlatformIconNode(iconSlug, acc.label || symbol),
+        createPlatformIconNode(iconSlug),
         el("h3", "platform-name", acc.label || symbol)
       );
 
