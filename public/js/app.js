@@ -363,20 +363,25 @@
   function buildAccountUrl(platKey, acc) {
     const rawHandle = String(acc.handle || acc.account_key || "")
       .trim()
-      .replace(/^@/, "");
+      .replace(/^@/, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "");
     const instance = acc.instance
       ? String(acc.instance)
           .trim()
           .replace(/^https?:\/\//, "")
           .replace(/\/+$/, "")
+          .replace(/[^a-zA-Z0-9.-]/g, "")
       : "";
+    const safeId = String(acc.id || acc.account_key || "")
+      .trim()
+      .replace(/[^a-zA-Z0-9._-]/g, "");
 
     switch (platKey) {
       case "youtube":
         if (acc.handle) {
           return `https://www.youtube.com/@${rawHandle}`;
         }
-        return `https://www.youtube.com/channel/${acc.id || acc.account_key}`;
+        return `https://www.youtube.com/channel/${safeId}`;
       case "twitch":
         return `https://www.twitch.tv/${rawHandle}`;
       case "github":
@@ -437,9 +442,12 @@
   }
 
   function createPlatformIconNode(iconSlug, altLabel) {
+    const safeSlug = String(iconSlug || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]/g, "");
     const img = document.createElement("img");
     img.className = "platform-icon-img";
-    img.src = `/images/platforms/${iconSlug}.webp`;
+    img.src = `/images/platforms/${safeSlug || "youtube"}.webp`;
     img.width = 32;
     img.height = 32;
     img.alt = altLabel || "";

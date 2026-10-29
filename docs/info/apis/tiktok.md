@@ -16,7 +16,7 @@ Extracción SSR desde hidratación `__UNIVERSAL_DATA_FOR_REHYDRATION__` con huel
 
 ## 2. Estado de Verificación Empírica
 - Extracción de `__UNIVERSAL_DATA_FOR_REHYDRATION__`, transporte `curl_cffi` (`impersonate="chrome124"`) y rotación OAuth2 en SQLite (`auth_tokens`) verificados mediante tests unitarios en `tests/unit/collectors/test_tiktok.py`.
-- Extracción SSR en vivo frente a desafíos anti-bot de `www.tiktok.com` y flujo real contra `open.tiktokapis.com`: `⚠️ sin verificar` en este entorno de desarrollo local.
+- Extracción SSR en vivo contra `https://www.tiktok.com/@raupulus` con `curl_cffi`: ✅ **Verificado empíricamente en vivo** el `2026-10-29` (`200 OK`, `followerCount` y `videoCount`). Flujo real con credenciales OAuth contra `open.tiktokapis.com`: `⚠️ sin verificar`.
 
 ---
-> Creado: 2026-10-28 · Última revisión: 2026-10-28
+> Creado: 2026-10-28 · Última revisión: 2026-10-29

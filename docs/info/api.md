@@ -29,8 +29,8 @@ Capa de exposición Read-Only con arquitectura de seguridad diferenciada en 3 ca
   - Restringido estrictamente a loopback local (`127.0.0.1`, `::1`, `localhost`) sin cabeceras de proxy inverso (`X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`, `Forwarded`). Devuelve `403 Forbidden` ante cualquier petición procedente de internet o proxy externo.
 - **Middleware Read-Only y Cabeceras de Seguridad:**
   - Bloquea cualquier método HTTP distinto de `GET`, `HEAD` y `OPTIONS` devolviendo `405 Method Not Allowed`.
-  - Inyecta `Content-Security-Policy`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` y `Cross-Origin-Opener-Policy: same-origin`.
-  - Monta automáticamente el directorio estático `public/` en `/` cuando está presente para despliegues integrados o locales.
+  - Inyecta `Content-Security-Policy` (`img-src 'self' data:;`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin` y `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` (en producción).
+  - Monta automáticamente el directorio estático `public/` en `/` con `follow_symlink=False` cuando está presente para despliegues integrados o locales.
 
 ### 1.2. Qué NO hace
 - Jamás acepta mutaciones ni comandos de escritura desde los clientes.

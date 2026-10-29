@@ -34,7 +34,7 @@ Integración con la API REST pública de instancias federadas de Mastodon.
 
 ## 4. Estado de Verificación Empírica
 - Contrato multi-instancia y aislamiento de errores verificados mediante mocks HTTP deterministas (`respx`) en `tests/unit/collectors/test_mastodon.py`.
-- Peticiones en vivo contra instancias federadas reales: `⚠️ sin verificar` en este entorno de desarrollo local.
+- Peticiones en vivo contra instancias federadas reales: ✅ **Verificado empíricamente en vivo** contra `mastodon.online` (`raupulus`) el `2026-10-29` (`200 OK`, seguidores, estados totales y último toot).
 
 ---
-> Creado: 2026-10-28 · Última revisión: 2026-10-28
+> Creado: 2026-10-28 · Última revisión: 2026-10-29

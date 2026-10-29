@@ -6,12 +6,13 @@ Contexto, reglas y directrices técnicas para agentes de IA que trabajen en este
 
 ## 1. Qué es este proyecto
 
-Una herramienta local y accesible exclusivamente mediante VPN, empaquetada en un contenedor **Docker** y desarrollada en **Python**.
+Una herramienta empaquetada en un contenedor **Docker** y desarrollada en **Python** que monitoriza y centraliza estadísticas en tiempo real de **14 proveedores**: redes sociales, canales, streaming y forjas Git (`YouTube`, `Twitch`, `GitHub`, `GitLab`, `Telegram`, `Bluesky`, `Mastodon`, `Twitter/X`, `Instagram`, `TikTok`, `Facebook`, `LinkedIn`), cripto spot global (`BTC`, `ADA`) y contadores de pulsaciones/clics (`Keycounter`), sirviendo esta información mediante una **arquitectura de seguridad de 3 canales**:
 
-Su función es monitorizar y centralizar estadísticas de redes sociales (YouTube, Twitter/X, Instagram, etc.) y recursos locales (como contadores de pulsaciones de teclas / keystrokes), sirviendo esta información a clientes en tiempo real.
+1. **Canal 1 — Público en Internet (`public/` + `WS /ws/public`):** Dashboard web público estático (`public/`) conectado por WebSocket público de solo lectura (`/ws/public`) con validación de `Origin`, límites de conexión por IP/global y exposición exclusiva de cuentas públicas, cripto global y totales históricos acumulados de Keycounter (`pulsations_total` y `clicks_total`).
+2. **Canal 2 — WebSocket Privado (`WS /ws/stats` y `WS /ws/profiles/{id}`):** Requiere autenticación `API_BEARER_TOKEN` y entrega el 100% de las métricas y eventos en tiempo real.
+3. **Canal 3 — API REST Privada (`GET /api/v1/*`):** Requiere `Authorization: Bearer <API_BEARER_TOKEN>` para consumo desde dispositivos IoT, pantallas de escritorio o scripts en red local/VPN (junto con `GET /healthz` restringido a loopback local para Docker).
 
-- **Arquitectura de consumo:** Estrictamente **unidireccional y de solo lectura**. Los clientes (dashboards, overlays, scripts de monitorización) solo consultan datos a través de **API REST** y escuchan eventos en tiempo real mediante **WebSockets**. Los clientes nunca envían mutaciones ni datos al servidor.
-- **Entorno:** Local / VPN privada. Sin exposición pública directa sin túnel/VPN.
+- **Arquitectura de consumo:** Estrictamente **unidireccional y de solo lectura**. Los clientes solo consultan datos a través de **API REST** y escuchan eventos en tiempo real mediante **WebSockets**. Los clientes nunca envían mutaciones ni datos al servidor.
 - **Mantenedor:** @raupulus · contacto público: `public@raupulus.dev`
 
 ---

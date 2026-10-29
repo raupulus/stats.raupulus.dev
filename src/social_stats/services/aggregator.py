@@ -42,6 +42,16 @@ def sanitize_account_state_for_public(state: AccountState) -> AccountState:
       setting 1h and 24h/today fields to None.
     """
     metrics = state.metrics
+    if metrics.latest_post is not None and metrics.latest_post.url is not None:
+        raw_url = metrics.latest_post.url.strip()
+        if not raw_url.lower().startswith(("https://", "http://")):
+            metrics = metrics.model_copy(
+                update={
+                    "latest_post": metrics.latest_post.model_copy(
+                        update={"url": None}
+                    )
+                }
+            )
     if state.platform == Platform.KEYCOUNTER:
         metrics = metrics.model_copy(
             update={

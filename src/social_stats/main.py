@@ -47,7 +47,7 @@ PUBLIC_CSP_POLICY = (
     "connect-src 'self' ws: wss:; "
     "style-src 'self' https://fonts.googleapis.com; "
     "font-src 'self' https://fonts.gstatic.com data:; "
-    "img-src 'self' data: https:; "
+    "img-src 'self' data:; "
     "script-src 'self'; "
     "object-src 'none'; "
     "base-uri 'self'; "
@@ -297,6 +297,12 @@ def create_app(
             "geolocation=(), microphone=(), camera=(), payment=(), usb=()",
         )
         response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+        if is_production:
+            response.headers.setdefault(
+                "Strict-Transport-Security",
+                "max-age=63072000; includeSubDomains; preload",
+            )
         if not request.url.path.startswith(("/docs", "/redoc")):
             response.headers.setdefault(
                 "Content-Security-Policy", PUBLIC_CSP_POLICY
@@ -311,7 +317,7 @@ def create_app(
     if public_dir is not None:
         fastapi_app.mount(
             "/",
-            StaticFiles(directory=str(public_dir), html=True),
+            StaticFiles(directory=str(public_dir), html=True, follow_symlink=False),
             name="public",
         )
 

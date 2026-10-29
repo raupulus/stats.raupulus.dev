@@ -45,6 +45,7 @@ env.bak/
 venv.bak/
 
 # Distribution / packaging
+uv.lock
 build/
 develop-eggs/
 dist/
