@@ -18,10 +18,10 @@ Esquemas y modelos de datos tipados con Pydantic v2 para métricas internas, est
 ---
 
 ## 2. Modelo de datos
-- `Platform`: `youtube`, `twitter`, `instagram`, `bluesky`, `mastodon`, `tiktok`, `linkedin`, `crypto`, `keycounter`.
+- `Platform`: `youtube`, `twitter`, `instagram`, `bluesky`, `mastodon`, `tiktok`, `linkedin`, `github`, `gitlab`, `telegram`, `twitch`, `facebook`, `crypto`, `keycounter`.
 - `CollectorStatus`: `healthy`, `stale`, `error`, `disabled`.
 - `WSEventType`: `snapshot`, `metric_update`, `collector_status`, `heartbeat`.
-- `AccountMetrics`: `followers_total`, `followers_last_24h`, `posts_total`, `views_total`, `views_last_24h`, `views_last_1h`, `window_1h_complete`, `window_24h_complete`, `latest_post`, campos de cotización cripto (`price_usd`, `price_eur`, `price_change_24h_usd`, `price_change_24h_pct`, `price_change_24h_eur`, `price_change_24h_eur_pct`, `high_24h_usd`, `low_24h_usd`, `high_24h_eur`, `low_24h_eur`) y campos de actividad de teclado/ratón (`pulsations_total`, `pulsations_today`, `pulsations_last_1h`, `clicks_total`, `clicks_today`, `clicks_last_1h`).
+- `AccountMetrics`: `followers_total`, `followers_last_24h`, `posts_total`, `views_total`, `views_last_24h`, `views_last_1h`, `stars_total` (estrellas en GitHub/GitLab o likes de página), `forks_total` (forks en GitHub/GitLab), `is_live` y `live_viewers` (estado en directo y espectadores concurrentes en Twitch), `window_1h_complete`, `window_24h_complete`, `latest_post`, campos de cotización cripto (`price_usd`, `price_eur`, `price_change_24h_usd`, `price_change_24h_pct`, `price_change_24h_eur`, `price_change_24h_eur_pct`, `high_24h_usd`, `low_24h_usd`, `high_24h_eur`, `low_24h_eur`) y campos de actividad de teclado/ratón (`pulsations_total`, `pulsations_today`, `pulsations_last_1h`, `clicks_total`, `clicks_today`, `clicks_last_1h`).
 - `CryptoAssetPrice` y `CryptoPricesResponse`: Esquemas dedicados para `GET /api/v1/crypto`.
 - `KeycounterAccountStats` y `KeycounterStatsResponse`: Esquemas dedicados para `GET /api/v1/keycounter`.
 - `PlatformSummary`: Resumen agregado por red social o plataforma dentro de un perfil con desglose en `accounts`.
@@ -71,4 +71,4 @@ No requiere variables de entorno propias.
 - Ninguno.
 
 ---
-> Creado: 2026-10-28 · Última revisión: 2026-10-28
+> Creado: 2026-10-28 · Última revisión: 2026-10-29

@@ -19,6 +19,9 @@ TOP_LEVEL_METRIC_FIELDS: tuple[str, ...] = (
     "views_total",
     "views_last_24h",
     "views_last_1h",
+    "stars_total",
+    "forks_total",
+    "live_viewers",
     "pulsations_total",
     "pulsations_today",
     "pulsations_last_1h",
@@ -126,6 +129,20 @@ class DiffEngine:
                     previous=prev_fval,
                     current=curr_fval,
                     delta=round(curr_fval - prev_fval, 8),
+                )
+
+        if current.is_live is not None:
+            curr_live_int = 1 if current.is_live else 0
+            prev_live_bool = previous.is_live if previous is not None else None
+            if prev_live_bool is None:
+                if current.is_live:
+                    changes["is_live"] = MetricChange(previous=None, current=1, delta=1)
+            elif current.is_live != prev_live_bool:
+                prev_live_int = 1 if prev_live_bool else 0
+                changes["is_live"] = MetricChange(
+                    previous=prev_live_int,
+                    current=curr_live_int,
+                    delta=curr_live_int - prev_live_int,
                 )
 
         is_new_latest_post = False

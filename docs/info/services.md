@@ -7,7 +7,7 @@ Servicios de coordinación del núcleo: agregación multiperfil (`ProfileAggrega
 ## 1. Qué hace y qué NO hace
 
 ### 1.1. Qué hace
-- `ProfileAggregator`: proyecta los estados únicos de `StateStore` hacia cada perfil definido en `profiles.json` / `profiles.yaml`, sumando automáticamente las métricas de múltiples cuentas de una misma red social (ej. varios canales de YouTube) y determinando el estado agregado por plataforma. Soporta el modo `public_only=True` (para `/ws/public`), donde filtra perfiles/cuentas con `public: false` o `disabled`, elimina `error_message` y `last_attempt_at`, y en `keycounter` redacta a `null` los contadores de hoy y 1h conservando únicamente los acumulados históricos (`pulsations_total` y `clicks_total`).
+- `ProfileAggregator`: proyecta los estados únicos de `StateStore` hacia cada perfil definido en `profiles.json` / `profiles.yaml`, sumando automáticamente las métricas de múltiples cuentas de una misma plataforma (seguidores, publicaciones/repos, visualizaciones, estrellas `stars_total`, `forks_total` y estado de directo `is_live` / `live_viewers`) y determinando el estado agregado por plataforma. Soporta el modo `public_only=True` (para `/ws/public`), donde filtra perfiles/cuentas con `public: false` o `disabled`, elimina `error_message` y `last_attempt_at`, y en `keycounter` redacta a `null` los contadores de hoy y 1h conservando únicamente los acumulados históricos (`pulsations_total` y `clicks_total`).
 - `CollectorScheduler`: ejecuta bucles periódicos asíncronos por plataforma respetando el intervalo individual en minutos (`interval_minutes`) de cada cuenta (y agrupando en lotes las cuentas cuyo vencimiento coincide), con *jitter* aleatorio (`±5%`), *exponential backoff* hasta 3600s ante errores, enriquecimiento con `SnapshotRepository`, sanitización de errores (`sanitize_error_message`), notificación de cambios (`on_metric_update`, `on_status_change`) y tarea diaria de limpieza de SQLite (`_pruning_loop`).
 - `WSManager`: gestiona suscripciones WebSocket separando suscriptores privados autenticados (`is_public=False`) y suscriptores públicos (`is_public=True`), aplicando límites de conexiones por IP y globales en el canal público, omitiendo `collector_status` hacia clientes públicos y evitando emitir `metric_update` en `/ws/public` cuando solo cambian las ventanas 1h/hoy de Keycounter.
 
@@ -76,4 +76,4 @@ Servicios de coordinación del núcleo: agregación multiperfil (`ProfileAggrega
 - Ninguno.
 
 ---
-> Creado: 2026-10-28 · Última revisión: 2026-10-28
+> Creado: 2026-10-28 · Última revisión: 2026-10-29

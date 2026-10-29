@@ -181,6 +181,14 @@ class SnapshotRepository:
         ts = timestamp if timestamp is not None else int(datetime.now(UTC).timestamp())
         latest = metrics.latest_post
         extra_data: dict[str, Any] = {}
+        if metrics.stars_total is not None:
+            extra_data["stars_total"] = metrics.stars_total
+        if metrics.forks_total is not None:
+            extra_data["forks_total"] = metrics.forks_total
+        if metrics.is_live is not None:
+            extra_data["is_live"] = metrics.is_live
+        if metrics.live_viewers is not None:
+            extra_data["live_viewers"] = metrics.live_viewers
         if metrics.price_usd is not None:
             extra_data["price_usd"] = metrics.price_usd
         if metrics.price_eur is not None:
@@ -270,6 +278,8 @@ class SnapshotRepository:
 
         points: list[HistoryPoint] = []
         for row in rows:
+            stars_total: int | None = None
+            forks_total: int | None = None
             price_usd: float | None = None
             price_eur: float | None = None
             pulsations_total: int | None = None
@@ -279,6 +289,10 @@ class SnapshotRepository:
                 try:
                     extra_dict = json.loads(raw_extra)
                     if isinstance(extra_dict, dict):
+                        if extra_dict.get("stars_total") is not None:
+                            stars_total = int(extra_dict["stars_total"])
+                        if extra_dict.get("forks_total") is not None:
+                            forks_total = int(extra_dict["forks_total"])
                         if extra_dict.get("price_usd") is not None:
                             price_usd = float(extra_dict["price_usd"])
                         if extra_dict.get("price_eur") is not None:
@@ -296,6 +310,8 @@ class SnapshotRepository:
                     posts_total=row["posts_total"],
                     views_total=row["views_total"],
                     latest_post_views=row["latest_post_views"],
+                    stars_total=stars_total,
+                    forks_total=forks_total,
                     price_usd=price_usd,
                     price_eur=price_eur,
                     pulsations_total=pulsations_total,

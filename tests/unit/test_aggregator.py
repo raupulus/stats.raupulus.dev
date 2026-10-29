@@ -633,3 +633,88 @@ async def test_aggregator_public_only_filtering_and_keycounter_redaction(
     assert kc_acc.metrics.clicks_last_1h is None
 
 
+async def test_stars_forks_and_twitch_live_aggregation_and_diff(
+    memory_db: Database,
+) -> None:
+    """Verify stars_total, forks_total, is_live, live_viewers aggregation, snapshot history, and DiffEngine."""
+    registry = ProfilesRegistry.model_validate(
+        {
+            "version": "1.0",
+            "profiles": {
+                "dev": {
+                    "name": "Dev",
+                    "accounts": {
+                        "github": [
+                            {"handle": "raupulus"},
+                            {"handle": "org_repo"},
+                        ],
+                        "twitch": [{"handle": "raupulus"}],
+                    },
+                }
+            },
+        }
+    )
+    store = StateStore(memory_db)
+    snap_repo = SnapshotRepository(memory_db)
+    await store.initialize_from_config_and_db(registry)
+    now = datetime(2026, 10, 29, 9, 30, 0, tzinfo=UTC)
+
+    gh1 = await snap_repo.enrich_and_record(
+        Platform.GITHUB,
+        "raupulus",
+        AccountMetrics(
+            followers_total=152,
+            posts_total=146,
+            stars_total=370,
+            forks_total=107,
+        ),
+        timestamp=int(now.timestamp()),
+    )
+    await store.update_account_success(Platform.GITHUB, "raupulus", gh1, now=now)
+    await store.update_account_success(
+        Platform.GITHUB,
+        "org_repo",
+        AccountMetrics(followers_total=10, posts_total=4, stars_total=30, forks_total=3),
+        now=now,
+    )
+
+    # Twitch starts offline, then transitions to live
+    out1 = await store.update_account_success(
+        Platform.TWITCH,
+        "raupulus",
+        AccountMetrics(followers_total=1074, posts_total=1, is_live=False, live_viewers=None),
+        now=now,
+    )
+    assert "is_live" not in out1.diff.changes
+
+    out2 = await store.update_account_success(
+        Platform.TWITCH,
+        "raupulus",
+        AccountMetrics(followers_total=1074, posts_total=1, is_live=True, live_viewers=42),
+        now=now,
+    )
+    assert out2.diff.has_changes
+    assert out2.diff.changes["is_live"].delta == 1
+    assert out2.diff.changes["live_viewers"].current == 42
+
+    agg = ProfileAggregator(registry, store)
+    pstats = agg.get_profile_stats("dev", now=now)
+    assert pstats is not None
+    gh_sum = pstats.platforms[Platform.GITHUB]
+    assert gh_sum.followers_total == 162
+    assert gh_sum.posts_total == 150
+    assert gh_sum.stars_total == 400
+    assert gh_sum.forks_total == 110
+
+    tw_sum = pstats.platforms[Platform.TWITCH]
+    assert tw_sum.is_live is True
+    assert tw_sum.live_viewers == 42
+
+    history = await snap_repo.get_history(
+        Platform.GITHUB, "raupulus", window_seconds=3600, now_ts=int(now.timestamp())
+    )
+    assert len(history) == 1
+    assert history[0].stars_total == 370
+    assert history[0].forks_total == 107
+
+

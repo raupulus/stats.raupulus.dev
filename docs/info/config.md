@@ -8,12 +8,12 @@ Sistema de configuración tipado del servidor: carga y validación de variables 
 
 ### 1.1. Qué hace
 - Carga y valida las variables de entorno del servidor mediante `Settings(BaseSettings)` (`pydantic-settings`).
-- Resuelve dinámicamente intervalos de recolección por plataforma (`get_poll_interval`) y credenciales multicuentas de Instagram (`get_instagram_credentials(credentials_ref)`) y Keycounter (`get_keycounter_token(credentials_ref)`).
+- Resuelve dinámicamente intervalos de recolección por plataforma (`get_poll_interval`) y credenciales multicuentas de Instagram (`get_instagram_credentials(credentials_ref)`), Facebook (`get_facebook_credentials(credentials_ref)`), GitHub (`get_github_token(credentials_ref)`), GitLab (`get_gitlab_token(credentials_ref)`) y Keycounter (`get_keycounter_token(credentials_ref)`).
 - Parsea y valida el archivo declarativo `config/profiles.json` (o `config/profiles.yaml`) mediante `ProfilesRegistry`, `ProfileConfig` y `AccountConfig`.
 - Soporta el atributo booleano `enable` (o `enabled`) tanto a nivel de perfil como de cuenta individual para activar/desactivar perfiles completos o canales concretos.
 - Soporta el atributo booleano `public` (por defecto `true`) tanto a nivel de perfil como de cuenta individual para controlar qué perfiles y cuentas se exponen en el WebSocket público (`/ws/public`). Si un perfil tiene `"public": false`, ninguna de sus cuentas se expone públicamente.
 - Soporta el atributo `interval_minutes` (o alias `poll_interval_minutes` / `interval`) en minutos por cuenta individual (y como valor por defecto opcional en el perfil) para gestionar la frecuencia de consulta de cada cuenta de forma independiente.
-- Normaliza y calcula de forma determinista el identificador único de cuenta (`account_key`) para cada red social, activo cripto y keycounter (`youtube`, `twitter`, `instagram`, `bluesky`, `mastodon`, `tiktok`, `linkedin`, `crypto`, `keycounter`), incluyendo alias como `bitcoin` $\rightarrow$ `btc`, `cardano` $\rightarrow$ `ada` y `keystrokes` $\rightarrow$ `keycounter`.
+- Normaliza y calcula de forma determinista el identificador único de cuenta (`account_key`) para las 14 plataformas soportadas (`youtube`, `twitter`, `instagram`, `bluesky`, `mastodon`, `tiktok`, `linkedin`, `github`, `gitlab`, `telegram`, `twitch`, `facebook`, `crypto`, `keycounter`), incluyendo soporte multi-instancia en `mastodon` y `gitlab` (`handle@instance`, por defecto `gitlab.com` en GitLab), limpieza de prefijos `https://t.me/s/` en `telegram` y alias como `bitcoin` $\rightarrow$ `btc`, `cardano` $\rightarrow$ `ada` y `keystrokes` $\rightarrow$ `keycounter`.
 - Deduplica cuentas repetidas entre perfiles mediante `get_unique_accounts_by_platform()` fusionando su estado activo/público y seleccionando el menor `interval_minutes` configurado.
 
 ### 1.2. Qué NO hace
@@ -99,4 +99,4 @@ Sistema de configuración tipado del servidor: carga y validación de variables 
 - Ninguno. Módulo verificado con tests unitarios.
 
 ---
-> Creado: 2026-10-28 · Última revisión: 2026-10-28
+> Creado: 2026-10-28 · Última revisión: 2026-10-29

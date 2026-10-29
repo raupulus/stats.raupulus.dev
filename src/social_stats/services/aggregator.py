@@ -167,6 +167,19 @@ class ProfileAggregator:
         views_last_1h = _sum_nullable_ints(
             [st.metrics.views_last_1h for st in source_states]
         )
+        stars_total = _sum_nullable_ints(
+            [st.metrics.stars_total for st in source_states]
+        )
+        forks_total = _sum_nullable_ints(
+            [st.metrics.forks_total for st in source_states]
+        )
+        live_flags = [
+            st.metrics.is_live for st in source_states if st.metrics.is_live is not None
+        ]
+        is_live: bool | None = any(live_flags) if live_flags else None
+        live_viewers = _sum_nullable_ints(
+            [st.metrics.live_viewers for st in source_states]
+        )
         pulsations_total = _sum_nullable_ints(
             [st.metrics.pulsations_total for st in source_states]
         )
@@ -198,6 +211,10 @@ class ProfileAggregator:
             views_total=views_total,
             views_last_24h=views_last_24h,
             views_last_1h=views_last_1h,
+            stars_total=stars_total,
+            forks_total=forks_total,
+            is_live=is_live,
+            live_viewers=live_viewers,
             pulsations_total=pulsations_total,
             pulsations_today=pulsations_today,
             pulsations_last_1h=pulsations_last_1h,

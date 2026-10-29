@@ -74,6 +74,48 @@
             "interval_minutes": 60
           }
         ],
+        "github": [
+          {
+            "handle": "raupulus",
+            "label": "GitHub Personal",
+            "enable": true,
+            "interval_minutes": 15
+          }
+        ],
+        "gitlab": [
+          {
+            "instance": "gitlab.com",
+            "handle": "raupulus",
+            "label": "GitLab Personal",
+            "enable": true,
+            "interval_minutes": 15
+          }
+        ],
+        "telegram": [
+          {
+            "handle": "raupulus_diffusion",
+            "label": "Canal de Telegram",
+            "enable": true,
+            "interval_minutes": 5
+          }
+        ],
+        "twitch": [
+          {
+            "handle": "raupulus",
+            "label": "Twitch Directos",
+            "enable": true,
+            "interval_minutes": 3
+          }
+        ],
+        "facebook": [
+          {
+            "handle": "raupulus",
+            "label": "Facebook Público",
+            "credentials_ref": "MAIN",
+            "enable": true,
+            "interval_minutes": 30
+          }
+        ],
         "keycounter": [
           {
             "handle": "raupulus",

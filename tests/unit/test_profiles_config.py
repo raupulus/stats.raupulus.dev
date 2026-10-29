@@ -342,3 +342,63 @@ def test_public_flag_propagation_and_deduplication() -> None:
 
     unique_public = registry.get_unique_accounts_by_platform(only_public=True)
     assert [a.account_key for a in unique_public["bluesky"]] == ["pub.bsky.social"]
+
+
+def test_new_platforms_account_key_normalization_and_settings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verify github, gitlab, telegram, twitch, and facebook account_key rules and Settings helpers."""
+    registry = ProfilesRegistry.model_validate(
+        {
+            "version": "1.0",
+            "profiles": {
+                "dev": {
+                    "name": "Dev Profile",
+                    "accounts": {
+                        "github": [{"handle": "@Raupulus"}],
+                        "gitlab": [
+                            {"handle": "@Raupulus"},
+                            {"handle": "raupulus", "instance": "https://git.example.org/"},
+                        ],
+                        "telegram": [{"handle": "https://t.me/s/Raupulus_Diffusion/"}],
+                        "twitch": [{"handle": "@Raupulus"}],
+                        "facebook": [{"handle": "@Raupulus/"}],
+                    },
+                }
+            },
+        }
+    )
+    dev = registry.get_profile("dev")
+    assert dev is not None
+    assert dev.accounts["github"][0].account_key == "raupulus"
+    assert [a.account_key for a in dev.accounts["gitlab"]] == [
+        "raupulus@gitlab.com",
+        "raupulus@git.example.org",
+    ]
+    assert dev.accounts["telegram"][0].account_key == "raupulus_diffusion"
+    assert dev.accounts["twitch"][0].account_key == "raupulus"
+    assert dev.accounts["facebook"][0].account_key == "raupulus"
+
+    monkeypatch.setenv("GITHUB_WORK_TOKEN", "ghp_work")
+    monkeypatch.setenv("GITLAB_SELF_TOKEN", "glpat_self")
+    monkeypatch.setenv("FB_BRAND_PAGE_ID", "998877")
+    monkeypatch.setenv("FB_BRAND_ACCESS_TOKEN", "fb_brand_tok")
+
+    settings = Settings(
+        _env_file=None,
+        github_token="ghp_main",
+        gitlab_token="glpat_main",
+        fb_main_page_id="112233",
+        fb_main_access_token="fb_main_tok",
+    )
+    assert settings.get_poll_interval("github") == 900
+    assert settings.get_poll_interval("gitlab") == 900
+    assert settings.get_poll_interval("telegram") == 300
+    assert settings.get_poll_interval("twitch") == 180
+    assert settings.get_poll_interval("facebook") == 1800
+    assert settings.get_github_token("MAIN") == "ghp_main"
+    assert settings.get_github_token("WORK") == "ghp_work"
+    assert settings.get_gitlab_token("MAIN") == "glpat_main"
+    assert settings.get_gitlab_token("SELF") == "glpat_self"
+    assert settings.get_facebook_credentials("MAIN") == ("112233", "fb_main_tok")
+    assert settings.get_facebook_credentials("BRAND") == ("998877", "fb_brand_tok")

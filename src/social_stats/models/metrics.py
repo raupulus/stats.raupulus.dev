@@ -30,6 +30,10 @@ class AccountMetrics(BaseModel):
     views_total: int | None = None
     views_last_24h: int | None = None
     views_last_1h: int | None = None
+    stars_total: int | None = None
+    forks_total: int | None = None
+    is_live: bool | None = None
+    live_viewers: int | None = None
     window_1h_complete: bool = False
     window_24h_complete: bool = False
     latest_post: LatestPostMetrics | None = None
@@ -77,6 +81,10 @@ class PlatformSummary(BaseModel):
     views_total: int | None = None
     views_last_24h: int | None = None
     views_last_1h: int | None = None
+    stars_total: int | None = None
+    forks_total: int | None = None
+    is_live: bool | None = None
+    live_viewers: int | None = None
     pulsations_total: int | None = None
     pulsations_today: int | None = None
     pulsations_last_1h: int | None = None

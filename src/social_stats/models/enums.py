@@ -15,6 +15,11 @@ class Platform(StrEnum):
     MASTODON = "mastodon"
     TIKTOK = "tiktok"
     LINKEDIN = "linkedin"
+    GITHUB = "github"
+    GITLAB = "gitlab"
+    TELEGRAM = "telegram"
+    TWITCH = "twitch"
+    FACEBOOK = "facebook"
     CRYPTO = "crypto"
     KEYCOUNTER = "keycounter"
 

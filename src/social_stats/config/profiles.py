@@ -32,6 +32,11 @@ SUPPORTED_PLATFORMS: frozenset[str] = frozenset(
         "mastodon",
         "tiktok",
         "linkedin",
+        "github",
+        "gitlab",
+        "telegram",
+        "twitch",
+        "facebook",
         "crypto",
         "keycounter",
     }
@@ -120,6 +125,40 @@ class AccountConfig(BaseModel):
             if not normalized_handle:
                 raise ValueError("Mastodon account requires 'handle'")
             return f"{normalized_handle}@{clean_instance}"
+
+        if norm_platform == "gitlab":
+            eff_instance = (
+                clean_instance.removeprefix("https://")
+                .removeprefix("http://")
+                .rstrip("/")
+                or "gitlab.com"
+            )
+            normalized_handle = clean_handle.lstrip("@").strip("/").lower()
+            if not normalized_handle:
+                raise ValueError("GitLab account requires 'handle'")
+            return f"{normalized_handle}@{eff_instance}"
+
+        if norm_platform == "telegram":
+            raw_tg = (
+                clean_handle.removeprefix("https://t.me/s/")
+                .removeprefix("http://t.me/s/")
+                .removeprefix("https://t.me/")
+                .removeprefix("http://t.me/")
+                .removeprefix("t.me/s/")
+                .removeprefix("t.me/")
+                .strip("/")
+                .lstrip("@")
+                .lower()
+            )
+            if not raw_tg:
+                raise ValueError("Telegram channel requires a non-empty 'handle'")
+            return raw_tg
+
+        if norm_platform == "facebook":
+            raw_fb = (clean_handle or clean_id).lstrip("@").strip("/").lower()
+            if not raw_fb:
+                raise ValueError("Facebook account requires 'handle' or 'id'")
+            return raw_fb
 
         if norm_platform == "crypto":
             raw_symbol = (clean_handle or clean_id).lstrip("$@").lower()

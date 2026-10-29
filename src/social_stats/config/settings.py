@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     poll_interval_instagram: int = Field(default=900, ge=10)
     poll_interval_tiktok: int = Field(default=900, ge=10)
     poll_interval_linkedin: int = Field(default=3600, ge=10)
+    poll_interval_github: int = Field(default=900, ge=10)
+    poll_interval_gitlab: int = Field(default=900, ge=10)
+    poll_interval_telegram: int = Field(default=300, ge=10)
+    poll_interval_twitch: int = Field(default=180, ge=10)
+    poll_interval_facebook: int = Field(default=1800, ge=10)
     poll_interval_crypto: int = Field(default=60, ge=10)
     poll_interval_keycounter: int = Field(default=60, ge=10)
 
@@ -63,6 +68,12 @@ class Settings(BaseSettings):
     tiktok_client_secret: str = ""
     linkedin_access_token: str = ""
     linkedin_li_at_cookie: str = ""
+    github_token: str = ""
+    gitlab_token: str = ""
+    twitch_client_id: str = ""
+    twitch_client_secret: str = ""
+    fb_main_page_id: str = ""
+    fb_main_access_token: str = ""
     keycounter_api_url: str = "https://api.example.com/api/v2/keycounter/stats"
     keycounter_api_token: str = ""
 
@@ -123,6 +134,47 @@ class Settings(BaseSettings):
         if specific:
             return specific
         return self.keycounter_api_token.strip()
+
+    def get_github_token(self, credentials_ref: str = "MAIN") -> str:
+        """Resolve optional GitHub read-only Personal Access Token by credentials_ref."""
+        ref_clean = credentials_ref.strip().upper() or "MAIN"
+        if ref_clean == "MAIN":
+            token = (
+                self.github_token
+                or os.getenv("GITHUB_TOKEN", "")
+                or os.getenv("GITHUB_MAIN_TOKEN", "")
+            )
+            return token.strip()
+        specific = os.getenv(f"GITHUB_{ref_clean}_TOKEN", "").strip()
+        if specific:
+            return specific
+        return self.github_token.strip()
+
+    def get_gitlab_token(self, credentials_ref: str = "MAIN") -> str:
+        """Resolve optional GitLab read_api Personal Access Token by credentials_ref."""
+        ref_clean = credentials_ref.strip().upper() or "MAIN"
+        if ref_clean == "MAIN":
+            token = (
+                self.gitlab_token
+                or os.getenv("GITLAB_TOKEN", "")
+                or os.getenv("GITLAB_MAIN_TOKEN", "")
+            )
+            return token.strip()
+        specific = os.getenv(f"GITLAB_{ref_clean}_TOKEN", "").strip()
+        if specific:
+            return specific
+        return self.gitlab_token.strip()
+
+    def get_facebook_credentials(self, credentials_ref: str = "MAIN") -> tuple[str, str]:
+        """Resolve optional Facebook Page (page_id, access_token) dynamically by credentials_ref."""
+        ref_clean = credentials_ref.strip().upper() or "MAIN"
+        if ref_clean == "MAIN":
+            page_id = self.fb_main_page_id or os.getenv("FB_MAIN_PAGE_ID", "")
+            token = self.fb_main_access_token or os.getenv("FB_MAIN_ACCESS_TOKEN", "")
+            return page_id.strip(), token.strip()
+        page_id = os.getenv(f"FB_{ref_clean}_PAGE_ID", "").strip()
+        token = os.getenv(f"FB_{ref_clean}_ACCESS_TOKEN", "").strip()
+        return page_id, token
 
 
 @lru_cache(maxsize=1)

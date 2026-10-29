@@ -43,6 +43,8 @@ class HistoryPoint(BaseModel):
     posts_total: int | None = None
     views_total: int | None = None
     latest_post_views: int | None = None
+    stars_total: int | None = None
+    forks_total: int | None = None
     price_usd: float | None = None
     price_eur: float | None = None
     pulsations_total: int | None = None
