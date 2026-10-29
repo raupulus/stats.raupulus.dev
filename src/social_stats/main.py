@@ -19,11 +19,16 @@ from social_stats.api.router import api_v1_router, local_health_router, ws_route
 from social_stats.collectors.base import BaseCollector
 from social_stats.collectors.bluesky import BlueskyCollector
 from social_stats.collectors.crypto import CryptoCollector
+from social_stats.collectors.facebook import FacebookCollector
+from social_stats.collectors.github import GitHubCollector
+from social_stats.collectors.gitlab import GitLabCollector
 from social_stats.collectors.instagram import InstagramCollector
 from social_stats.collectors.keycounter import KeycounterCollector
 from social_stats.collectors.linkedin import LinkedInCollector
 from social_stats.collectors.mastodon import MastodonCollector
+from social_stats.collectors.telegram import TelegramCollector
 from social_stats.collectors.tiktok import TikTokCollector
+from social_stats.collectors.twitch import TwitchCollector
 from social_stats.collectors.twitter import TwitterCollector
 from social_stats.collectors.youtube import YouTubeCollector
 from social_stats.config.profiles import ProfilesRegistry, load_profiles_config
@@ -97,6 +102,27 @@ def build_default_collectors(
             li_at_cookie=settings.linkedin_li_at_cookie,
             db=db,
             snapshot_repo=snapshot_repo,
+        ),
+        Platform.GITHUB: GitHubCollector(
+            settings=settings,
+            snapshot_repo=snapshot_repo,
+        ),
+        Platform.GITLAB: GitLabCollector(
+            settings=settings,
+            snapshot_repo=snapshot_repo,
+        ),
+        Platform.TELEGRAM: TelegramCollector(
+            snapshot_repo=snapshot_repo,
+        ),
+        Platform.TWITCH: TwitchCollector(
+            client_id=settings.twitch_client_id,
+            client_secret=settings.twitch_client_secret,
+            snapshot_repo=snapshot_repo,
+        ),
+        Platform.FACEBOOK: FacebookCollector(
+            settings=settings,
+            snapshot_repo=snapshot_repo,
+            use_curl_cffi=True,
         ),
         Platform.CRYPTO: CryptoCollector(
             snapshot_repo=snapshot_repo,

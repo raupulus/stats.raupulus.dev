@@ -114,11 +114,16 @@ social-stats-api-websockets/
 │       └── apis/
 │           ├── binance.md
 │           ├── bluesky.md
+│           ├── facebook.md
+│           ├── github.md
+│           ├── gitlab.md
 │           ├── instagram.md
 │           ├── keycounter.md
 │           ├── linkedin.md
 │           ├── mastodon.md
+│           ├── telegram.md
 │           ├── tiktok.md
+│           ├── twitch.md
 │           ├── twitter.md
 │           └── youtube.md
 ├── pyproject.toml
@@ -148,11 +153,16 @@ social-stats-api-websockets/
 │       │   ├── base.py
 │       │   ├── bluesky.py
 │       │   ├── crypto.py
+│       │   ├── facebook.py
+│       │   ├── github.py
+│       │   ├── gitlab.py
 │       │   ├── instagram.py
 │       │   ├── keycounter.py
 │       │   ├── linkedin.py
 │       │   ├── mastodon.py
+│       │   ├── telegram.py
 │       │   ├── tiktok.py
+│       │   ├── twitch.py
 │       │   ├── twitter.py
 │       │   └── youtube.py
 │       ├── config/
@@ -186,11 +196,16 @@ social-stats-api-websockets/
         └── collectors/
             ├── test_bluesky.py
             ├── test_crypto.py
+            ├── test_facebook.py
+            ├── test_github.py
+            ├── test_gitlab.py
             ├── test_instagram.py
             ├── test_keycounter.py
             ├── test_linkedin.py
             ├── test_mastodon.py
+            ├── test_telegram.py
             ├── test_tiktok.py
+            ├── test_twitch.py
             ├── test_twitter.py
             └── test_youtube.py
 ```
@@ -201,7 +216,7 @@ social-stats-api-websockets/
 
 - **Tipado estricto:** Uso de `typing` y modelos `Pydantic` para todos los payloads de datos devueltos por la API y WebSockets.
 - **Gestión de errores:** Si un colector de una red social falla o experimenta rate limit, el sistema debe responder con el último dato conocido en caché (stale data) indicando el estado del collector, sin tumbar el servicio ni las demás métricas.
-- **Modularidad:** Cada fuente de métricas (YouTube, Twitter, Instagram, Bluesky, Mastodon, TikTok, LinkedIn, Crypto, Keycounter) es un módulo/proveedor desacoplado con una interfaz común (`BaseCollector`).
+- **Modularidad:** Cada fuente de métricas (YouTube, Twitter, Instagram, Bluesky, Mastodon, TikTok, LinkedIn, GitHub, GitLab, Telegram, Twitch, Facebook, Crypto, Keycounter) es un módulo/proveedor desacoplado con una interfaz común (`BaseCollector`).
 
 ---
 
@@ -255,7 +270,7 @@ Cualquier agente que trabaje en este repositorio debe aplicar este protocolo de 
   - [`docs/info/models.md`](docs/info/models.md) — Modelos de dominio y esquemas Pydantic REST/WebSocket
   - [`docs/info/storage.md`](docs/info/storage.md) — Motor SQLite WAL, cálculo de deltas ($\Delta_{1h}$, $\Delta_{24h}$), `StateStore` y `DiffEngine`
   - [`docs/info/services.md`](docs/info/services.md) — `ProfileAggregator`, `CollectorScheduler` y `WSManager`
-  - [`docs/info/collectors.md`](docs/info/collectors.md) — Interfaz `BaseCollector` y los 9 colectores por plataforma (redes sociales, cripto y keycounter)
+  - [`docs/info/collectors.md`](docs/info/collectors.md) — Interfaz `BaseCollector` y los 14 colectores por plataforma (redes sociales, forjas Git, canales, streaming, cripto y keycounter)
   - [`docs/info/api.md`](docs/info/api.md) — Servidor FastAPI Read-Only, rutas REST v1 y WebSockets
 
 ### 5.4. Checklist Obligatorio antes de Cerrar Cualquier Tarea

@@ -32,7 +32,7 @@ Bienvenido a la documentación técnica **viva** del proyecto. Este directorio c
 | `models` | [`models.md`](./models.md) | Modelos Pydantic v2 de métricas, estados, perfiles, respuestas REST y eventos WebSocket. |
 | `storage` | [`storage.md`](./storage.md) | Base de datos SQLite WAL, motor de snapshots ($\Delta_{1h}$, $\Delta_{24h}$), `StateStore` en memoria y `DiffEngine`. |
 | `services` | [`services.md`](./services.md) | Agregador multiperfil (`ProfileAggregator`), planificador (`CollectorScheduler`) y gestor WebSocket (`WSManager`). |
-| `collectors` | [`collectors.md`](./collectors.md) | Clase base `BaseCollector` y los 9 proveedores de recolección (redes sociales, cripto y keycounter). |
+| `collectors` | [`collectors.md`](./collectors.md) | Clase base `BaseCollector` y los 14 proveedores de recolección (redes sociales, forjas Git, mensajería, streaming, cripto y keycounter). |
 | `api` / `main` | [`api.md`](./api.md) | Servidor FastAPI Read-Only, seguridad de 3 canales (`/ws/public`, `/ws/stats`, `/api/v1/*`), `/healthz` y montaje estático `public/`. |
 
 
@@ -49,6 +49,11 @@ Bienvenido a la documentación técnica **viva** del proyecto. Este directorio c
 | Instagram | [`apis/instagram.md`](./apis/instagram.md) | Meta Graph API System User Token (Nivel A) + Web Profile API (Nivel B). |
 | TikTok | [`apis/tiktok.md`](./apis/tiktok.md) | Hidratación SSR `__UNIVERSAL_DATA_FOR_REHYDRATION__` + Display API v2 auto-refresh. |
 | LinkedIn | [`apis/linkedin.md`](./apis/linkedin.md) | Community Management API (`organization`) + Voyager API (`personal`). |
+| GitHub | [`apis/github.md`](./apis/github.md) | GitHub REST API v3 (seguidores, repositorios públicos, suma de estrellas y forks). |
+| GitLab | [`apis/gitlab.md`](./apis/gitlab.md) | GitLab REST API v4 multi-instancia + fallback público XHR `followers.json`. |
+| Telegram | [`apis/telegram.md`](./apis/telegram.md) | Vista previa pública `https://t.me/s/{handle}` sin Bot API ni tokens en URL. |
+| Twitch | [`apis/twitch.md`](./apis/twitch.md) | Twitch Helix API OAuth2 App Token (Nivel A) + Twitch Public GQL (Nivel B). |
+| Facebook | [`apis/facebook.md`](./apis/facebook.md) | Meta Graph API v21.0 Bearer Token (Nivel A) + OpenGraph HTML `curl_cffi` (Nivel B). |
 | Binance (Cripto) | [`apis/binance.md`](./apis/binance.md) | Binance Public Market API v3 (`/api/v3/ticker/24hr` en USD/USDT y EUR sin tokens). |
 | Keycounter | [`apis/keycounter.md`](./apis/keycounter.md) | API v2 privada (`KEYCOUNTER_API_URL`) con Bearer token (pulsaciones y clics). |
 
