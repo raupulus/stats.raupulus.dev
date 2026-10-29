@@ -60,18 +60,118 @@ Incluye un **panel web público de telemetría (`public/`)** listo para publicar
 
 ---
 
-## Inicio Rápido (Docker Compose o Entorno Local)
+## Despliegue en Producción (Docker, Permisos y Proxy Inverso)
 
-### Con Docker Compose (Recomendado para Producción)
+### 1. Preparación de Archivos y Permisos del Volumen (`UID 10001`)
+
+El contenedor se ejecuta con sistema de archivos raíz de solo lectura (`read_only: true`), sin capacidades de kernel (`cap_drop: [ALL]`) y bajo el usuario sin privilegios `appuser` (`UID 10001` / `GID 10001`).
+
+1. Copiar las plantillas de configuración y crear el directorio de persistencia SQLite (`WAL`):
+   ```bash
+   cp .env.example .env
+   cp config/profiles.example.json config/profiles.json
+   mkdir -p data
+   ```
+2. Asignar permisos de escritura al directorio `data/` para el usuario `10001:10001` del contenedor:
+   ```bash
+   sudo chown -R 10001:10001 data
+   chmod 750 data
+   ```
+3. Generar un token criptográfico para `API_BEARER_TOKEN` e introducirlo en `.env` junto con los orígenes permitidos y las claves de API necesarias:
+   ```bash
+   python3 -c "import secrets; print(secrets.token_urlsafe(48))"
+   ```
+   Variables clave en `.env`:
+   - `BIND_IP=127.0.0.1` (para exponer el puerto solo al proxy inverso local o IP de la interfaz VPN).
+   - `API_BEARER_TOKEN=<tu_token_generado>` (protege `/api/v1/*`, `/ws/stats` y `/ws/profiles/*`).
+   - `WS_PUBLIC_ALLOWED_ORIGINS=https://stats.raupulus.dev` (lista separada por comas de dominios autorizados para `/ws/public`).
+   - `CORS_ALLOWED_ORIGINS=https://stats.raupulus.dev`
+
+### 2. Construcción, Arranque y Verificación con Docker Compose
 
 ```bash
-cp .env.example .env
-cp config/profiles.example.json config/profiles.json
-mkdir -p data
+# Construir imagen multi-stage e iniciar en segundo plano
 docker compose up --build -d
+
+# Comprobar estado (debe aparecer 'healthy' gracias a GET /healthz local)
+docker compose ps
+
+# Consultar logs en tiempo real
+docker compose logs -f social-stats
+
+# Verificar healthcheck interno y API privada con Bearer Token
+curl http://127.0.0.1:8000/healthz
+curl -H "Authorization: Bearer <API_BEARER_TOKEN>" http://127.0.0.1:8000/api/v1/health
 ```
 
-### En Entorno Local (Desarrollo con Python 3.12+)
+### 3. Montajes y Endurecimiento en `docker-compose.yml`
+
+| Recurso | Ruta en Host | Ruta en Contenedor | Modo | Propósito |
+|---|---|---|---|---|
+| Configuración de perfiles | `./config` | `/app/config` | `:ro` (Solo lectura) | Carga declarativa de `profiles.json` o `profiles.yaml`. |
+| Dashboard web público | `./public` | `/app/public` | `:ro` (Solo lectura) | Activos estáticos (`index.html`, CSS, JS, iconos `.webp`, SEO). |
+| Base de datos histórica | `./data` | `/app/data` | Lectura/Escritura (`10001:10001`) | Base de datos SQLite en modo `WAL` (`stats.db`, `-wal`, `-shm`). |
+| Caché efímera runtime | `tmpfs` (RAM) | `/tmp` (`64M`) | Escritura en memoria | Caché temporal de `curl_cffi` con el raíz en `read_only: true`. |
+
+### 4. Configuración de Proxy Inverso (Nginx / Caddy) para `stats.raupulus.dev`
+
+Para publicar en internet **únicamente el Canal 1** (archivos estáticos de `public/` + WebSocket público `/ws/public`) manteniendo los endpoints `/api/v1/*`, `/ws/stats` y `/healthz` inaccesibles desde el exterior (restringidos a red local / VPN vía `127.0.0.1:8000`):
+
+#### Opción A — Nginx (`DocumentRoot` estático + Proxy exclusivo a `/ws/public`)
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name stats.raupulus.dev;
+
+    # Servir directamente el dashboard estático público
+    root /ruta/al/repositorio/public;
+    index index.html;
+
+    # Proxy inverso exclusivamente para el WebSocket público de solo lectura
+    location = /ws/public {
+        proxy_pass http://127.0.0.1:8000/ws/public;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header Origin $http_origin;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400s;
+    }
+
+    # Bloquear explícitamente cualquier acceso público a rutas privadas
+    location ~ ^/(api|ws/stats|ws/profiles|healthz|docs|redoc|openapi\.json) {
+        return 403;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+
+#### Opción B — Caddy (`Caddyfile`)
+
+```caddyfile
+stats.raupulus.dev {
+    @private path /api/* /ws/stats* /ws/profiles* /healthz* /docs* /redoc* /openapi.json
+    respond @private 403
+
+    handle /ws/public* {
+        reverse_proxy 127.0.0.1:8000
+    }
+
+    handle {
+        root * /ruta/al/repositorio/public
+        file_server
+    }
+}
+```
+
+### 5. Ejecución en Entorno Local (Desarrollo sin Docker con Python 3.12+)
 
 ```bash
 python3 -m venv .venv

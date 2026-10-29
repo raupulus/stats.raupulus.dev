@@ -27,7 +27,7 @@ async def seeded_api_app(
     aggregator: ProfileAggregator,
 ) -> httpx.AsyncClient:
     """Provide an httpx.AsyncClient connected to a seeded FastAPI app."""
-    now = datetime(2026, 10, 28, 13, 30, 0, tzinfo=UTC)
+    now = datetime.now(UTC)
     now_ts = int(now.timestamp())
 
     # Seed metrics for raupulus YouTube channels and proyecto_secundario YouTube channel

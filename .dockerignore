@@ -1,0 +1,58 @@
+# ==========================================
+# Git, IDEs y Archivos de Sistema
+# ==========================================
+.git
+.gitignore
+.vscode
+.idea
+.fleet
+.zed
+.DS_Store
+.DS_Store?
+._*
+*.sw?
+.*.sw?
+*~
+*.bak
+
+# ==========================================
+# Entornos Python, Cachés y Tests
+# ==========================================
+.venv
+venv
+ENV
+env
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build
+dist
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+.coverage.*
+htmlcov
+
+# ==========================================
+# Secretos, Datos Locales y Documentación
+# ==========================================
+.env
+.env.*
+!.env.example
+config/profiles.json
+config/profiles.yaml
+data/
+logs/
+*.log
+docs/
+tests/
+AGENTS.md
+CLAUDE.md
+docker-compose*.yml
+docker-compose*.yaml
+compose*.yml
+compose*.yaml

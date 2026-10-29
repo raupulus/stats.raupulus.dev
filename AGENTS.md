@@ -75,6 +75,7 @@ Una herramienta empaquetada en un contenedor **Docker** y desarrollada en **Pyth
 
 ```text
 social-stats-api-websockets/
+├── .dockerignore
 ├── .env.example
 ├── .gitignore
 ├── AGENTS.md

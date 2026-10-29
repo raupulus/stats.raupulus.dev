@@ -20,6 +20,9 @@ services:
         max-file: "3"
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     read_only: true
     tmpfs:
-      - /tmp
+      - /tmp:size=64M,mode=1777
+    stop_grace_period: 15s

@@ -6,11 +6,13 @@ Guía operativa para desplegar el contenedor en un servidor privado accesible po
 
 ## 1. Despliegue con Docker Compose
 
-1. Copiar las plantillas de configuración:
+1. Copiar las plantillas de configuración y asignar permisos al volumen de datos (`UID 10001` del usuario `appuser` dentro del contenedor):
    ```bash
    cp .env.example .env
    cp config/profiles.example.json config/profiles.json
    mkdir -p data
+   sudo chown -R 10001:10001 data
+   chmod 750 data
    ```
 2. Editar `config/profiles.json` definiendo los activos globales de cripto en la clave raíz `"crypto"` (`BTC`, `ADA`, etc.) y tus perfiles en `"profiles"` (ej. `raupulus`, `proyecto_secundario`), indicando `"enable": true` (o `false`) para activar/desactivar perfiles o cuentas individuales, `"public": true` (o `false`) para controlar qué perfiles/cuentas se muestran en la web pública (`/ws/public`), e `"interval_minutes"` para ajustar el tiempo de consulta en minutos de cada cuenta.
 3. En `.env`, configurar `BIND_IP` (`127.0.0.1` tras proxy inverso o IP privada de VPN), generar un token seguro para `API_BEARER_TOKEN` (requerido para `/api/v1/*` y `/ws/stats`), definir `WS_PUBLIC_ALLOWED_ORIGINS=https://stats.raupulus.dev` y añadir `KEYCOUNTER_API_TOKEN` y las claves necesarias.
@@ -27,8 +29,9 @@ Guía operativa para desplegar el contenedor en un servidor privado accesible po
 ---
 
 ## 2. Seguridad del Contenedor y Separación de Canales
-- **Usuario sin privilegios:** El proceso corre bajo `appuser` (`UID 10001`).
-- **Filesystem raíz de solo lectura (`read_only: true`):** Solo `/app/data` (volumen persistente SQLite WAL) y `/tmp` (`tmpfs`) permiten escritura.
+- **Contexto de build limpio (`.dockerignore`):** Excluye `.env`, `config/profiles.json`, `data/`, `.git/`, `.venv/`, `tests/` y `docs/` para evitar filtraciones accidentales en las capas de la imagen.
+- **Usuario sin privilegios y sin capabilities:** El proceso corre bajo `appuser` (`UID 10001`), con `no-new-privileges:true`, `cap_drop: [ALL]` y `stop_grace_period: 15s`.
+- **Filesystem raíz de solo lectura (`read_only: true`):** Solo `/app/data` (volumen persistente SQLite WAL) y `/tmp` (`tmpfs: size=64M,mode=1777`) permiten escritura; `./config` y `./public` se montan en modo `:ro`.
 - **Consumo 100% Read-Only:** Cualquier método HTTP distinto de `GET`, `HEAD` u `OPTIONS` recibe `405 Method Not Allowed`.
 - **Healthcheck exclusivo de localhost (`GET /healthz`):** Solo responde a peticiones directas desde loopback (`127.0.0.1` / `::1`) sin cabeceras de proxy inverso; rechaza peticiones externas con `403 Forbidden`.
 - **Cero credenciales en URLs:** Las claves de YouTube (`X-Goog-Api-Key`), Instagram (`Authorization: Bearer`) y Keycounter (`Authorization: Bearer`) viajan exclusivamente por cabeceras HTTP y los errores se sanitizan antes de guardarse en memoria o SQLite.
