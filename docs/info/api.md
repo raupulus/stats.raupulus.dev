@@ -29,7 +29,7 @@ Capa de exposición Read-Only con arquitectura de seguridad diferenciada en 3 ca
   - Restringido estrictamente a loopback local (`127.0.0.1`, `::1`, `localhost`) sin cabeceras de proxy inverso (`X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`, `Forwarded`). Devuelve `403 Forbidden` ante cualquier petición procedente de internet o proxy externo.
 - **Middleware Read-Only y Cabeceras de Seguridad:**
   - Bloquea cualquier método HTTP distinto de `GET`, `HEAD` y `OPTIONS` devolviendo `405 Method Not Allowed`.
-  - Inyecta `Content-Security-Policy` (`img-src 'self' data:;`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin` y `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` (en producción).
+  - Inyecta `Content-Security-Policy` (`img-src 'self' data:;`, `script-src 'self' https://static.cloudflareinsights.com;`, `connect-src 'self' ws: wss: https://cloudflareinsights.com https://*.cloudflareinsights.com;`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin` y `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` (en producción).
   - Aplica `Cache-Control: public, max-age=86400` en activos estáticos (`/css/`, `/js/`, `/images/`, iconos, `site.webmanifest`, `robots.txt`, `sitemap.xml`) y `Cache-Control: no-cache` en `/` (`/index.html`) para preservar la caché de retroceso/avance (`bfcache`) del navegador.
   - Monta automáticamente el directorio estático `public/` en `/` con `follow_symlink=False` cuando está presente para despliegues integrados o locales.
 
@@ -95,4 +95,4 @@ Capa de exposición Read-Only con arquitectura de seguridad diferenciada en 3 ca
 - Ninguno.
 
 ---
-> Creado: 2026-10-28 · Última revisión: 2026-10-29
+> Creado: 2026-10-28 · Última revisión: 2026-10-31

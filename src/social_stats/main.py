@@ -62,11 +62,11 @@ CACHEABLE_STATIC_PREFIXES: tuple[str, ...] = (
 )
 PUBLIC_CSP_POLICY = (
     "default-src 'self'; "
-    "connect-src 'self' ws: wss:; "
+    "connect-src 'self' ws: wss: https://cloudflareinsights.com https://*.cloudflareinsights.com; "
     "style-src 'self' https://fonts.googleapis.com; "
     "font-src 'self' https://fonts.gstatic.com data:; "
     "img-src 'self' data:; "
-    "script-src 'self'; "
+    "script-src 'self' https://static.cloudflareinsights.com; "
     "object-src 'none'; "
     "base-uri 'self'; "
     "frame-ancestors 'none'; "
