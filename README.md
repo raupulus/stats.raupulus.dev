@@ -147,11 +147,21 @@ server {
         return 403;
     }
 
+    # Servir archivos estáticos reales con caché larga; devolver 404 real si no existen
+    location ~* \.(?:css|js|webp|png|svg|webmanifest|xml|txt|json|md)$ {
+        expires 365d;
+        add_header Cache-Control "public, max-age=31536000";
+        try_files $uri =404;
+    }
+
     location / {
-        try_files $uri $uri/ /index.html;
+        add_header Vary "Accept" always;
+        try_files $uri $uri/ =404;
     }
 }
 ```
+
+> **Alternativa recomendada (Proxy directo al contenedor para `/` y `/ws/public`):** Si rediriges `location /` hacia `http://127.0.0.1:8000` (manteniendo bloqueado `/api/*`, `/ws/stats`, `/ws/profiles` y `/healthz`), FastAPI gestiona automáticamente la negociación de contenido `Accept: text/markdown` (`Vary: Accept`, `406 Not Acceptable`), las cabeceras `Link` para agentes (`ai-catalog`, `ard`, `llms-txt`), CSP y `Cache-Control`.
 
 #### Opción B — Caddy (`Caddyfile`)
 

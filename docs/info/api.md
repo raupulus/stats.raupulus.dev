@@ -30,7 +30,8 @@ Capa de exposición Read-Only con arquitectura de seguridad diferenciada en 3 ca
 - **Middleware Read-Only y Cabeceras de Seguridad:**
   - Bloquea cualquier método HTTP distinto de `GET`, `HEAD` y `OPTIONS` devolviendo `405 Method Not Allowed`.
   - Inyecta `Content-Security-Policy` (`img-src 'self' data:;`, `script-src 'self' https://static.cloudflareinsights.com;`, `connect-src 'self' ws: wss: https://cloudflareinsights.com https://*.cloudflareinsights.com;`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin` y `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` (en producción).
-  - Aplica `Cache-Control: public, max-age=86400` en activos estáticos (`/css/`, `/js/`, `/images/`, iconos, `site.webmanifest`, `robots.txt`, `sitemap.xml`) y `Cache-Control: no-cache` en `/` (`/index.html`) para preservar la caché de retroceso/avance (`bfcache`) del navegador.
+  - Aplica `Cache-Control: public, max-age=31536000` en activos estáticos (`/css/`, `/js/`, `/images/`, `/.well-known/`, iconos, `site.webmanifest`, `robots.txt`, `sitemap.xml`, `llms.txt`, `index.md`) y `Cache-Control: no-cache` junto con `Vary: Accept` y cabeceras `Link` (`rel="ai-catalog"`, `rel="ard"`, `rel="llms-txt"`, `rel="alternate"; type="text/markdown"`) en `/` (`/index.html`).
+  - Soporta negociación de contenido HTTP RFC 9110 en `/` y `/index.html`: sirve `public/index.md` (`text/markdown; charset=utf-8`) cuando el agente solicita `Accept: text/markdown` con mayor prioridad (`q`) que HTML, y devuelve `406 Not Acceptable` ante tipos MIME explícitamente incompatibles.
   - Monta automáticamente el directorio estático `public/` en `/` con `follow_symlink=False` cuando está presente para despliegues integrados o locales.
 
 ### 1.2. Qué NO hace

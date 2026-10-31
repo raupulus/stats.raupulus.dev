@@ -130,6 +130,9 @@ social-stats-api-websockets/
 │           └── youtube.md
 ├── pyproject.toml
 ├── public/
+│   ├── .well-known/
+│   │   ├── ai-catalog.json
+│   │   └── ard.json
 │   ├── css/
 │   │   └── styles.css
 │   ├── favicon.svg
@@ -152,8 +155,10 @@ social-stats-api-websockets/
 │   │       ├── twitter.webp
 │   │       └── youtube.webp
 │   ├── index.html
+│   ├── index.md
 │   ├── js/
 │   │   └── app.js
+│   ├── llms.txt
 │   ├── logo.svg
 │   ├── og-preview.png
 │   ├── og-preview.webp

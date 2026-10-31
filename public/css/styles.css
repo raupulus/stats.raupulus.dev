@@ -737,15 +737,18 @@ body {
   color: var(--color-tertiary);
   box-shadow: 0 0 14px -2px rgba(76, 214, 255, 0.45);
   animation: pulse-live-pill 2.2s ease-in-out infinite;
+  will-change: opacity, transform;
 }
 
 @keyframes pulse-live-pill {
   0%,
   100% {
-    box-shadow: 0 0 10px -2px rgba(76, 214, 255, 0.32);
+    opacity: 1;
+    transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 18px 0 rgba(76, 214, 255, 0.62);
+    opacity: 0.78;
+    transform: scale(0.98);
   }
 }
 

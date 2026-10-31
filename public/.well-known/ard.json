@@ -1,0 +1,32 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "stats.raupulus.dev — Telemetría y Estadísticas en Tiempo Real (@raupulus)"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:stats.raupulus.dev:docs:llms-overview",
+      "displayName": "Guía Markdown para Agentes de IA (llms.txt)",
+      "type": "text/markdown",
+      "url": "https://stats.raupulus.dev/llms.txt",
+      "description": "Resumen estructurado en Markdown con la arquitectura, perfiles monitorizados, métricas de redes sociales, forjas Git, cripto spot y enlaces oficiales de stats.raupulus.dev.",
+      "representativeQueries": [
+        "¿Qué estadísticas y redes sociales monitoriza stats.raupulus.dev?",
+        "Obtener resumen en Markdown de las métricas públicas de @raupulus",
+        "¿Cuáles son los canales y perfiles oficiales monitorizados en stats.raupulus.dev?"
+      ]
+    },
+    {
+      "identifier": "urn:air:stats.raupulus.dev:stream:public-telemetry-ws",
+      "displayName": "Stream WebSocket Público de Telemetría en Tiempo Real (/ws/public)",
+      "type": "application/json",
+      "url": "https://stats.raupulus.dev/index.md",
+      "description": "Especificación del canal WebSocket público de solo lectura (wss://stats.raupulus.dev/ws/public) que emite eventos snapshot, metric_update y heartbeat en tiempo real.",
+      "representativeQueries": [
+        "¿Cómo conectarse al stream WebSocket público de stats.raupulus.dev?",
+        "Consultar en tiempo real seguidores, estrellas de GitHub/GitLab, precio de BTC/ADA y Keycounter de @raupulus",
+        "Formato de eventos JSON del WebSocket /ws/public en stats.raupulus.dev"
+      ]
+    }
+  ]
+}

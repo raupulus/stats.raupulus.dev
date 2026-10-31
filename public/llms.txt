@@ -1,0 +1,24 @@
+# stats.raupulus.dev
+
+> Panel público de telemetría y estadísticas en tiempo real de redes sociales, canales, streaming, forjas Git (GitHub y GitLab), cotización cripto spot global (BTC y ADA en USD y EUR) y contadores históricos acumulados de Keycounter (pulsaciones de teclado y clics de ratón) de Raúl Caro Pastorino (@raupulus) y sus proyectos asociados.
+
+Este nodo opera bajo una arquitectura estrictamente unidireccional y de solo lectura (`Read-Only`). Los clientes públicos consumen datos en tiempo real mediante el stream WebSocket público `wss://stats.raupulus.dev/ws/public`.
+
+## Recursos Principales
+
+- [Dashboard Público en Tiempo Real](https://stats.raupulus.dev/): Interfaz web interactiva con actualización en vivo por WebSocket (`/ws/public`).
+- [Especificación en Markdown del Sitio](https://stats.raupulus.dev/index.md): Versión en texto Markdown estructurado para agentes de IA y modelos de lenguaje (`Accept: text/markdown`).
+- [Catálogo de Recursos Agénticos (ARD)](https://stats.raupulus.dev/.well-known/ai-catalog.json): Manifiesto JSON de descubrimiento de capacidades y endpoints para agentes autónomos.
+- [Mapa del Sitio XML](https://stats.raupulus.dev/sitemap.xml): Índice de URLs públicas para motores de búsqueda.
+
+## Perfiles y Redes Sociales Oficiales
+
+- [Sitio Web Oficial de Raúl Caro Pastorino (@raupulus)](https://raupulus.dev/): Portal principal, artículos técnicos y proyectos.
+- [Directorio de Redes Sociales (@raupulus)](https://raupulus.dev/social/): Enlaces verificados a todas las plataformas monitorizadas.
+- [GitHub (@raupulus)](https://github.com/raupulus): Repositorios Open Source, estrellas y actividad en GitHub.
+- [GitLab (@raupulus)](https://gitlab.com/raupulus): Proyectos y espejos de código en GitLab.
+- [YouTube (@raupulus)](https://www.youtube.com/@raupulus): Canal principal de vídeo y divulgación técnica.
+- [Twitch (@raupulus)](https://www.twitch.tv/raupulus): Canal de emisiones en directo y desarrollo en vivo.
+- [Telegram (@raupulus_diffusion)](https://t.me/raupulus_diffusion): Canal de difusión de novedades y publicaciones.
+- [Mastodon (@raupulus@mastodon.online)](https://mastodon.online/@raupulus): Perfil oficial en el Fediverso.
+- [Bluesky (@raupulus.bsky.social)](https://bsky.app/profile/raupulus.bsky.social): Perfil oficial en la red AT Protocol.

@@ -12,7 +12,7 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from social_stats import __version__
@@ -44,12 +44,14 @@ from social_stats.storage.state_store import StateStore
 
 mimetypes.add_type("application/manifest+json", ".webmanifest")
 mimetypes.add_type("image/webp", ".webp")
+mimetypes.add_type("text/markdown", ".md")
 
 ALLOWED_READONLY_METHODS: frozenset[str] = frozenset({"GET", "HEAD", "OPTIONS"})
 CACHEABLE_STATIC_PREFIXES: tuple[str, ...] = (
     "/css/",
     "/js/",
     "/images/",
+    "/.well-known/",
     "/favicon.svg",
     "/logo.svg",
     "/icon-192.png",
@@ -59,6 +61,8 @@ CACHEABLE_STATIC_PREFIXES: tuple[str, ...] = (
     "/site.webmanifest",
     "/robots.txt",
     "/sitemap.xml",
+    "/llms.txt",
+    "/index.md",
 )
 PUBLIC_CSP_POLICY = (
     "default-src 'self'; "
@@ -189,6 +193,57 @@ def _resolve_public_dir(configured_path: Path) -> Path | None:
     return None
 
 
+def _negotiate_root_accept(accept_header: str) -> str:
+    """
+    Evaluate HTTP Accept header for '/' or '/index.html' content negotiation.
+    Returns 'html', 'markdown', or 'not_acceptable' (RFC 9110).
+    """
+    raw = accept_header.strip()
+    if not raw:
+        return "html"
+
+    best_q: dict[str, float] = {}
+    for item in raw.split(","):
+        parts = [p.strip() for p in item.split(";") if p.strip()]
+        if not parts:
+            continue
+        media_range = parts[0].lower()
+        q = 1.0
+        for param in parts[1:]:
+            if param.lower().startswith("q="):
+                try:
+                    q = float(param[2:].strip())
+                except ValueError:
+                    q = 0.0
+        q = max(0.0, min(1.0, q))
+        if media_range not in best_q or q > best_q[media_range]:
+            best_q[media_range] = q
+
+    def _effective_q(mime: str, subtype_wildcard: str) -> float:
+        if mime in best_q:
+            return best_q[mime]
+        if subtype_wildcard in best_q:
+            return best_q[subtype_wildcard]
+        if "*/*" in best_q:
+            return best_q["*/*"]
+        return 0.0
+
+    q_html = max(
+        _effective_q("text/html", "text/*"),
+        _effective_q("application/xhtml+xml", "application/*"),
+    )
+    q_md = max(
+        _effective_q("text/markdown", "text/*"),
+        _effective_q("text/x-markdown", "text/*"),
+    )
+
+    if q_md <= 0.0 and q_html <= 0.0:
+        return "not_acceptable"
+    if q_md > q_html and ("text/markdown" in best_q or "text/x-markdown" in best_q):
+        return "markdown"
+    return "html"
+
+
 def create_app(
     *,
     settings: Settings | None = None,
@@ -298,11 +353,14 @@ def create_app(
         allow_headers=["Authorization", "Content-Type", "Accept"],
     )
 
+    public_dir = _resolve_public_dir(cfg.public_dir_path)
+
     @fastapi_app.middleware("http")
     async def enforce_readonly_and_security_headers(
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
+        req_path = request.url.path
         if request.method.upper() not in ALLOWED_READONLY_METHODS:
             response: Response = JSONResponse(
                 status_code=405,
@@ -315,6 +373,23 @@ def create_app(
                     ),
                 },
             )
+        elif public_dir is not None and req_path in ("/", "/index.html"):
+            decision = _negotiate_root_accept(request.headers.get("accept", ""))
+            if decision == "not_acceptable":
+                response = JSONResponse(
+                    status_code=406,
+                    content={
+                        "error": "not_acceptable",
+                        "message": "Formatos soportados: text/html, text/markdown.",
+                    },
+                )
+            elif decision == "markdown" and (public_dir / "index.md").is_file():
+                response = FileResponse(
+                    public_dir / "index.md",
+                    media_type="text/markdown; charset=utf-8",
+                )
+            else:
+                response = await call_next(request)
         else:
             response = await call_next(request)
 
@@ -334,24 +409,30 @@ def create_app(
                 "Strict-Transport-Security",
                 "max-age=63072000; includeSubDomains; preload",
             )
-        if not request.url.path.startswith(("/docs", "/redoc")):
+        if not req_path.startswith(("/docs", "/redoc")):
             response.headers.setdefault(
                 "Content-Security-Policy", PUBLIC_CSP_POLICY
             )
-        req_path = request.url.path
         if req_path.startswith(CACHEABLE_STATIC_PREFIXES):
             response.headers.setdefault(
-                "Cache-Control", "public, max-age=86400"
+                "Cache-Control", "public, max-age=31536000"
             )
         elif req_path in ("/", "/index.html"):
             response.headers.setdefault("Cache-Control", "no-cache")
+            response.headers.setdefault("Vary", "Accept")
+            response.headers.setdefault(
+                "Link",
+                '</.well-known/ai-catalog.json>; rel="ai-catalog", '
+                '</.well-known/ard.json>; rel="ard", '
+                '</llms.txt>; rel="llms-txt", '
+                '</index.md>; rel="alternate"; type="text/markdown"',
+            )
         return response
 
     fastapi_app.include_router(local_health_router)
     fastapi_app.include_router(api_v1_router)
     fastapi_app.include_router(ws_router)
 
-    public_dir = _resolve_public_dir(cfg.public_dir_path)
     if public_dir is not None:
         fastapi_app.mount(
             "/",

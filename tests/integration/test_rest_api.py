@@ -437,3 +437,58 @@ async def test_public_web_entrypoint_and_dom_security(
         r"\b(innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval)\b",
         executable_js,
     )
+
+
+async def test_agentic_discovery_and_markdown_content_negotiation(
+    seeded_api_app: httpx.AsyncClient,
+) -> None:
+    """
+    Verify:
+    - GET /llms.txt returns valid Markdown with H1 and links.
+    - GET /.well-known/ai-catalog.json and /.well-known/ard.json return valid ARD 1.0 JSON.
+    - GET / with Accept: text/markdown returns Markdown and Vary: Accept.
+    - GET / with Accept: text/markdown;q=0.9, text/html;q=0.8 returns Markdown.
+    - GET / with Accept: application/pdf returns 406 Not Acceptable.
+    """
+    llms_resp = await seeded_api_app.get("/llms.txt", headers={"Authorization": ""})
+    assert llms_resp.status_code == 200
+    assert llms_resp.text.startswith("# stats.raupulus.dev")
+    assert "](https://" in llms_resp.text
+
+    for catalog_path in ("/.well-known/ai-catalog.json", "/.well-known/ard.json"):
+        cat_resp = await seeded_api_app.get(catalog_path, headers={"Authorization": ""})
+        assert cat_resp.status_code == 200
+        cat_data = cat_resp.json()
+        assert cat_data["specVersion"] == "1.0"
+        assert len(cat_data["entries"]) >= 2
+        for entry in cat_data["entries"]:
+            assert entry["identifier"].startswith("urn:air:stats.raupulus.dev:")
+            assert entry["displayName"]
+            assert entry["type"]
+            assert entry["url"].startswith("https://stats.raupulus.dev/")
+
+    md_resp = await seeded_api_app.get(
+        "/",
+        headers={"Authorization": "", "Accept": "text/markdown"},
+    )
+    assert md_resp.status_code == 200
+    assert "text/markdown" in md_resp.headers.get("content-type", "")
+    assert "Accept" in md_resp.headers.get("Vary", "")
+    assert md_resp.text.startswith("# stats.raupulus.dev")
+
+    q_resp = await seeded_api_app.get(
+        "/",
+        headers={
+            "Authorization": "",
+            "Accept": "text/html;q=0.5, text/markdown;q=0.9",
+        },
+    )
+    assert q_resp.status_code == 200
+    assert "text/markdown" in q_resp.headers.get("content-type", "")
+
+    not_acc = await seeded_api_app.get(
+        "/",
+        headers={"Authorization": "", "Accept": "application/pdf"},
+    )
+    assert not_acc.status_code == 406
+

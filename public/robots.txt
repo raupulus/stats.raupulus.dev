@@ -5,3 +5,4 @@ Disallow: /ws/
 Disallow: /healthz
 
 Sitemap: https://stats.raupulus.dev/sitemap.xml
+Agentmap: https://stats.raupulus.dev/.well-known/ai-catalog.json
