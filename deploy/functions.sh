@@ -62,13 +62,46 @@ sync_env_from_example() {
     cp -f "${example_file}" "${target_file}"
     chmod 640 "${target_file}" 2>/dev/null || true
 
-    local var_keys
-    var_keys=$(grep -E '^[A-Za-z_][A-Za-z0-9_]*=' "${example_file}" | cut -d'=' -f1 || true)
+    python3 - "${example_file}" "${target_file}" <<'PYEOF'
+import os
+import re
+import sys
+from pathlib import Path
 
-    for key in ${var_keys}; do
-        if [[ -n "${!key:-}" ]]; then
-            replace_or_add_var_in_file "${target_file}" "${key}" "${!key}"
-            echo "  [ENV] Variable inyectada: ${key}"
-        fi
-    done
+template_path = Path(sys.argv[1])
+target_path = Path(sys.argv[2])
+
+lines = target_path.read_text(encoding="utf-8").splitlines()
+key_regex = re.compile(r"^\s*#?\s*([A-Za-z_][A-Za-z0-9_]*)\s*=")
+
+candidate_keys: list[str] = []
+for line in template_path.read_text(encoding="utf-8").splitlines():
+    m = key_regex.match(line)
+    if m and m.group(1) not in candidate_keys:
+        candidate_keys.append(m.group(1))
+
+for extra in ("DATA_DIR", "CONFIG_DIR", "BIND_IP", "APP_PORT", "CONTAINER_NAME"):
+    if extra not in candidate_keys:
+        candidate_keys.append(extra)
+
+for key in candidate_keys:
+    val = os.environ.get(key)
+    if val is None or val == "":
+        continue
+    pattern = re.compile(rf"^\s*#?\s*{re.escape(key)}\s*=.*$")
+    replaced = False
+    new_lines: list[str] = []
+    for line in lines:
+        if not replaced and pattern.match(line):
+            new_lines.append(f"{key}={val}")
+            replaced = True
+        else:
+            new_lines.append(line)
+    if not replaced:
+        new_lines.append(f"{key}={val}")
+    lines = new_lines
+    print(f"  [ENV] Variable inyectada: {key}")
+
+target_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+PYEOF
 }

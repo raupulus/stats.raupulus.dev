@@ -368,6 +368,42 @@ async def test_scheduler_background_lifecycle_and_restart_hydration(
     assert restored.metrics.followers_total == 1000
     assert restored.status == CollectorStatus.HEALTHY
 
+    # Verify that on restart, CollectorScheduler does NOT re-poll the fresh HEALTHY account
+    # at t=0, and only retries the account in ERROR state.
+    polled_on_restart: list[str] = []
+
+    class _RecordingCollector(BaseCollector):
+        platform = Platform.YOUTUBE
+
+        async def collect_batch(
+            self, accounts: list[AccountConfig]
+        ) -> dict[str, AccountMetrics]:
+            for a in accounts:
+                polled_on_restart.append(a.account_key)
+            return {
+                a.account_key: AccountMetrics(
+                    followers_total=2000, posts_total=20, views_total=9000
+                )
+                for a in accounts
+            }
+
+    agg2 = ProfileAggregator(sample_registry, store2)
+    scheduler2 = CollectorScheduler(
+        settings=Settings(poll_interval_youtube=600),
+        registry=sample_registry,
+        collectors={Platform.YOUTUBE: _RecordingCollector()},
+        snapshot_repo=snapshot_repo,
+        state_store=store2,
+        aggregator=agg2,
+    )
+    scheduler2.start()
+    await asyncio.sleep(0.05)
+    await scheduler2.stop()
+
+    assert "UC1111111111111111111111" not in polled_on_restart
+    assert "UC2222222222222222222222" in polled_on_restart
+
+
 
 class _SnapshotEnrichingCollector(BaseCollector):
     platform = Platform.YOUTUBE

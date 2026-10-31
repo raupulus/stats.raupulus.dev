@@ -14,7 +14,7 @@ from social_stats.collectors.base import BaseCollector, sanitize_error_message
 from social_stats.config.profiles import AccountConfig, ProfilesRegistry
 from social_stats.config.settings import Settings
 from social_stats.models.api import CollectorStatusData, MetricUpdateData
-from social_stats.models.enums import Platform
+from social_stats.models.enums import CollectorStatus, Platform
 from social_stats.services.aggregator import ProfileAggregator
 from social_stats.storage.snapshot_repo import SnapshotRepository
 from social_stats.storage.state_store import StateStore, StatusTransition
@@ -256,7 +256,23 @@ class CollectorScheduler:
         interval_minutes with batching, jitter, and exponential backoff.
         """
         default_interval = self.settings.get_poll_interval(str(collector.platform))
-        next_due: dict[str, float] = {acc.account_key: 0.0 for acc in accounts}
+        now_utc = datetime.now(UTC)
+        now_mono_init = time.monotonic()
+        next_due: dict[str, float] = {}
+        for acc in accounts:
+            acc_base_interval = acc.get_poll_interval_seconds(default_interval)
+            existing = self.state_store.get_account_state(collector.platform, acc.account_key)
+            if (
+                existing is not None
+                and existing.status == CollectorStatus.HEALTHY
+                and existing.last_updated_at is not None
+            ):
+                elapsed = (now_utc - existing.last_updated_at).total_seconds()
+                remaining = acc_base_interval - elapsed
+                if 0 < remaining <= acc_base_interval:
+                    next_due[acc.account_key] = now_mono_init + remaining
+                    continue
+            next_due[acc.account_key] = 0.0
 
         while not self._stop_event.is_set():
             now_mono = time.monotonic()

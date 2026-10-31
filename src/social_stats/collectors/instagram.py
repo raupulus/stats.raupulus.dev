@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html as html_lib
 import re
 from datetime import UTC, datetime
 from typing import Any
@@ -24,6 +25,17 @@ from social_stats.storage.snapshot_repo import SnapshotRepository
 IG_GRAPH_BASE_URL = "https://graph.facebook.com/v21.0"
 IG_WEB_PROFILE_URL = "https://www.instagram.com/api/v1/users/web_profile_info/"
 IG_PUBLIC_APP_ID = "936619743392459"
+IG_OG_USER_AGENT = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"
+_IG_META_DESC_PATTERNS = (
+    re.compile(r'<meta[^>]+property="og:description"[^>]+content="([^"]+)"', re.IGNORECASE),
+    re.compile(r'<meta[^>]+content="([^"]+)"[^>]+property="og:description"', re.IGNORECASE),
+    re.compile(r'<meta[^>]+name="description"[^>]+content="([^"]+)"', re.IGNORECASE),
+    re.compile(r'<meta[^>]+content="([^"]+)"[^>]+name="description"', re.IGNORECASE),
+)
+_IG_METRICS_RE = re.compile(
+    r"([0-9.,KkMmBb]+)\s*(?:Followers|seguidores),\s*([0-9.,KkMmBb]+)\s*(?:Following|siguiendo),\s*([0-9.,KkMmBb]+)\s*(?:Posts|publicaciones)",
+    re.IGNORECASE,
+)
 
 
 def _parse_int(val: Any) -> int | None:
@@ -248,7 +260,7 @@ class InstagramCollector(BaseCollector):
         """Fallback to parsing Instagram public profile OpenGraph meta tags."""
         url = f"https://www.instagram.com/{handle}/"
         headers = {
-            "User-Agent": DEFAULT_USER_AGENT,
+            "User-Agent": IG_OG_USER_AGENT,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9,es;q=0.8",
         }
@@ -270,19 +282,23 @@ class InstagramCollector(BaseCollector):
                     )
                 html = c_resp.text
 
-        match = re.search(r'<meta property="og:description" content="([^"]+)"', html)
-        if not match:
+        descriptions: list[str] = []
+        for pattern in _IG_META_DESC_PATTERNS:
+            for m in pattern.finditer(html):
+                descriptions.append(html_lib.unescape(m.group(1)))
+
+        if not descriptions:
             raise CollectorError("Instagram profile page missing og:description")
 
-        desc = match.group(1)
-        parsed_match = re.search(
-            r"([0-9.,KkMmBb]+)\s*(?:Followers|seguidores),\s*([0-9.,KkMmBb]+)\s*(?:Following|siguiendo),\s*([0-9.,KkMmBb]+)\s*(?:Posts|publicaciones)",
-            desc,
-            re.IGNORECASE,
-        )
-        if not parsed_match:
+        parsed_match: re.Match[str] | None = None
+        for desc in descriptions:
+            parsed_match = _IG_METRICS_RE.search(desc)
+            if parsed_match is not None:
+                break
+
+        if parsed_match is None:
             raise CollectorError(
-                f"Could not parse metrics from Instagram og:description: {desc[:60]}"
+                f"Could not parse metrics from Instagram og:description: {descriptions[0][:60]}"
             )
 
         followers = _parse_shorthand_int(parsed_match.group(1))
@@ -302,6 +318,7 @@ class InstagramCollector(BaseCollector):
         use_httpx_for_level_b: bool,
     ) -> dict[str, AccountMetrics]:
         results: dict[str, AccountMetrics] = {}
+        web_profile_blocked = False
 
         for acc in accounts:
             handle = (acc.handle or acc.account_key).lstrip("@").lower()
@@ -319,24 +336,30 @@ class InstagramCollector(BaseCollector):
                     # Fallback from Level A to Level B
                     metrics = None
 
-            if metrics is None:
+            if metrics is None and not web_profile_blocked:
                 try:
                     metrics = await self._fetch_level_b_web_profile(
                         handle,
                         client=client if use_httpx_for_level_b else None,
                     )
+                except CollectorError as exc:
+                    if exc.status_code in {401, 403, 429}:
+                        web_profile_blocked = True
+                    metrics = None
                 except Exception:
-                    # Fallback to public OpenGraph HTML profile parsing
-                    try:
-                        metrics = await self._fetch_level_b_html_profile(
-                            handle,
-                            client=client if use_httpx_for_level_b else None,
-                        )
-                    except Exception as exc:
-                        self.record_account_error(
-                            acc.account_key, f"{type(exc).__name__}: {exc}"
-                        )
-                        continue
+                    metrics = None
+
+            if metrics is None:
+                try:
+                    metrics = await self._fetch_level_b_html_profile(
+                        handle,
+                        client=client if use_httpx_for_level_b else None,
+                    )
+                except Exception as exc:
+                    self.record_account_error(
+                        acc.account_key, f"{type(exc).__name__}: {exc}"
+                    )
+                    continue
 
             enriched = await self.enrich_with_snapshots(acc.account_key, metrics)
             results[acc.account_key] = enriched
