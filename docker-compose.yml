@@ -25,4 +25,6 @@ services:
     read_only: true
     tmpfs:
       - /tmp:size=64M,mode=1777
+    mem_limit: 512m
+    cpus: 1.0
     stop_grace_period: 15s
