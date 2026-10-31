@@ -10,9 +10,9 @@ services:
     ports:
       - "${BIND_IP:-127.0.0.1}:${APP_PORT:-8000}:${APP_PORT:-8000}"
     volumes:
-      - ./config:/app/config:ro
+      - ${CONFIG_DIR:-./config}:/app/config:ro
       - ./public:/app/public:ro
-      - ./data:/app/data
+      - ${DATA_DIR:-./data}:/app/data
     logging:
       driver: "json-file"
       options:

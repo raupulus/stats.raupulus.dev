@@ -153,24 +153,37 @@ def build_default_collectors(
     return collectors
 
 
+PACKAGE_ROOT: Path = Path(__file__).resolve().parents[2]
+
+
 def _resolve_profiles_path(configured_path: Path) -> Path:
     """Resolve profiles configuration path (.json or .yaml), falling back to example templates."""
     if configured_path.exists():
         return configured_path
-    for candidate in (
-        Path("config/profiles.json"),
-        Path("config/profiles.yaml"),
-        Path("config/profiles.example.json"),
-        Path("config/profiles.example.yaml"),
+    if not configured_path.is_absolute():
+        pkg_configured = PACKAGE_ROOT / configured_path
+        if pkg_configured.exists():
+            return pkg_configured
+    for rel in (
+        "config/profiles.json",
+        "config/profiles.yaml",
+        "config/profiles.production.json",
+        "config/profiles.example.json",
+        "config/profiles.example.yaml",
     ):
-        if candidate.exists():
-            return candidate
+        for candidate in (Path(rel), PACKAGE_ROOT / rel):
+            if candidate.exists():
+                return candidate
     return configured_path
 
 
 def _resolve_public_dir(configured_path: Path) -> Path | None:
     """Resolve public/ static directory if present."""
-    for candidate in (configured_path, Path("public"), Path("/app/public")):
+    candidates: list[Path] = [configured_path]
+    if not configured_path.is_absolute():
+        candidates.append(PACKAGE_ROOT / configured_path)
+    candidates.extend([Path("public"), PACKAGE_ROOT / "public", Path("/app/public")])
+    for candidate in candidates:
         if candidate.is_dir() and (candidate / "index.html").is_file():
             return candidate
     return None

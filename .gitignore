@@ -111,5 +111,6 @@ config/profiles.yaml
 !config/profiles.example.yaml
 config/profiles.json
 !config/profiles.example.json
+!config/profiles.production.json
 
 
